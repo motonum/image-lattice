@@ -17,6 +17,9 @@ export default function App() {
   const [gap, setGap] = useState<number>(10)
   const [fontSize, setFontSize] = useState<number>(72)
   const [labelMode, setLabelMode] = useState<'below' | 'above' | 'overlay'>('overlay')
+  const [prevLabels, setPrevLabels] = useState<Array<string | undefined> | null>(null)
+  // numberingStrategy: 'user' means leave labels as user-defined; 'numeric'/'alpha' trigger auto-numbering
+  const [numberingStrategy, setNumberingStrategy] = useState<'user' | 'numeric' | 'alpha' | 'upper-alpha'>('user')
   const [showPreview, setShowPreview] = useState<boolean>(false)
   const [cells, setCells] = useState<CellItem[]>([])
   const canvasRef = useRef<CanvasHandle | null>(null)
@@ -45,6 +48,53 @@ export default function App() {
   }
 
   const replaceCells = (newCells: CellItem[]) => setCells(newCells)
+
+  const indexToAlpha = (n: number) => {
+    // 0 -> a, 25 -> z, 26 -> aa
+    let s = ''
+    while (n >= 0) {
+      s = String.fromCharCode((n % 26) + 97) + s
+      n = Math.floor(n / 26) - 1
+    }
+    return s
+  }
+
+  const handleNumberingStrategyChange = (newStrategy: 'user' | 'numeric' | 'alpha') => {
+    if (newStrategy === numberingStrategy) return
+
+    if (newStrategy === 'user') {
+      // revert to previously saved labels if available
+      if (prevLabels) {
+        const restored = cells.map((c, i) => ({ ...c, label: prevLabels[i] }))
+        replaceCells(restored)
+        setPrevLabels(null)
+      }
+      setNumberingStrategy('user')
+      return
+    }
+
+    // entering numeric/alpha mode: save previous labels if not already saved
+    if (!prevLabels) setPrevLabels(cells.map(c => c.label))
+
+    const newCells = [...cells]
+    let counter = 1
+    for (let i = 0; i < newCells.length; i++) {
+      if (newCells[i].src) {
+        let label = ''
+        if (newStrategy === 'numeric') {
+          label = `(${counter})`
+        } else if (newStrategy === 'alpha') {
+          label = `(${indexToAlpha(counter - 1)})`
+        } else if (newStrategy === 'upper-alpha') {
+          label = `(${indexToAlpha(counter - 1).toUpperCase()})`
+        }
+        newCells[i] = { ...newCells[i], label }
+        counter++
+      }
+    }
+    replaceCells(newCells)
+    setNumberingStrategy(newStrategy)
+  }
 
   const handleDownload = async () => {
     if (!canvasRef.current) return
@@ -93,6 +143,15 @@ export default function App() {
         <button onClick={handleGenerate}>Generate Grid</button>
         <button onClick={handleDownload}>Download PNG</button>
         <button onClick={() => setShowPreview(p => !p)}>{showPreview ? 'Hide Preview' : 'Show Preview'}</button>
+        <label>
+          Label numbering:
+          <select value={numberingStrategy} onChange={e => handleNumberingStrategyChange(e.target.value as any)}>
+            <option value="user">User defined</option>
+            <option value="numeric">1,2,3,...</option>
+            <option value="alpha">a,b,c,...</option>
+            <option value="upper-alpha">A,B,C,...</option>
+          </select>
+        </label>
       </section>
 
       <Grid
