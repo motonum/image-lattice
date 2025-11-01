@@ -185,39 +185,41 @@ export default function Grid({
 		return (
 			<div
 				key={i}
-				className="cell"
+				className="border border-dashed border-gray-300 p-1.5 min-h-[120px] bg-[#fafafa]"
 				onDragOver={onDragOver}
 				onDrop={(e) => onDropToCell(e, i)}
 			>
 				<div
-					className="drop-area"
+					className="w-full h-full flex items-center justify-center"
 					onDragOver={(e) => e.preventDefault()}
 					onDrop={(e) => onFileDrop(e, i)}
 				>
 					{cell?.src ? (
 						<div
-							className="thumb"
+							className="flex flex-col gap-2"
 							draggable
 							onDragStart={(e) => onDragStart(e, i)}
 						>
-							<img src={cell.src} alt={cell.fileName} />
+							<img className="max-w-full max-h-[120px] block" src={cell.src} alt={cell.fileName} />
 							<input
+								className="w-full"
 								type="text"
 								value={cell.label ?? ""}
 								onChange={(e) => updateCell(i, { label: e.target.value })}
 							/>
 							<button
 								type="button"
-								className="remove-btn"
+								className="mt-1.5 bg-red-500 text-white border-0 px-2 py-1 rounded cursor-pointer hover:opacity-90"
 								onClick={() => handleRemove(i)}
 							>
 								削除
 							</button>
 						</div>
 					) : (
-						<div className="placeholder">
+						<div className="flex flex-col items-center gap-2">
 							<div>Drop image or</div>
 							<input
+								className="w-full"
 								type="file"
 								accept="image/*,.tif,.tiff"
 								multiple
@@ -235,7 +237,7 @@ export default function Grid({
 
 	return (
 		<div
-			className="grid"
+			className="grid grid-cols-1 gap-2"
 			style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
 		>
 			{cellsToRender}

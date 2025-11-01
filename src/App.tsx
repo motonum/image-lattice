@@ -117,12 +117,12 @@ export default function App() {
 	};
 
 	return (
-		<div className="app">
+		<div className="mx-auto max-w-[1100px]">
 			<header>
 				<h1>Image Lattice</h1>
 			</header>
 
-			<section className="controls">
+			<section className="flex gap-2 items-center mb-4 flex-wrap">
 				<label>
 					Rows:
 					<input
