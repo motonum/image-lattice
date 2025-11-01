@@ -15,7 +15,8 @@ export default function App() {
   const [rows, setRows] = useState<number>(2)
   const [cols, setCols] = useState<number>(2)
   const [gap, setGap] = useState<number>(10)
-  const [fontSize, setFontSize] = useState<number>(16)
+  const [fontSize, setFontSize] = useState<number>(72)
+  const [labelMode, setLabelMode] = useState<'below' | 'above' | 'overlay'>('overlay')
   const [showPreview, setShowPreview] = useState<boolean>(false)
   const [cells, setCells] = useState<CellItem[]>([])
   const canvasRef = useRef<CanvasHandle | null>(null)
@@ -81,6 +82,14 @@ export default function App() {
           Label font (px):
           <input type="number" min={8} max={72} value={fontSize} onChange={e => setFontSize(Number(e.target.value))} />
         </label>
+        <label>
+          Label mode:
+          <select value={labelMode} onChange={e => setLabelMode(e.target.value as any)}>
+            <option value="below">Below image</option>
+            <option value="above">Above image</option>
+            <option value="overlay">Overlay (top-left)</option>
+          </select>
+        </label>
         <button onClick={handleGenerate}>Generate Grid</button>
         <button onClick={handleDownload}>Download PNG</button>
         <button onClick={() => setShowPreview(p => !p)}>{showPreview ? 'Hide Preview' : 'Show Preview'}</button>
@@ -102,6 +111,7 @@ export default function App() {
         gap={gap}
         fontSize={fontSize}
         preview={showPreview}
+        labelMode={labelMode}
       />
     </div>
   )
