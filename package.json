@@ -9,7 +9,7 @@
 		"lint": "biome check",
 		"format": "biome format",
 		"format:write": "biome format --write",
-		"lint:fix": "biome check --apply"
+		"lint:fix": "biome check --write"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",
