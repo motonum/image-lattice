@@ -226,16 +226,19 @@ export default function Grid({
 								className="max-w-full max-h-[120px] block"
 								src={cell.src}
 								alt={cell.fileName}
+								draggable={false}
 							/>
 							<input
 								className="w-full"
 								type="text"
 								value={cell.label ?? ""}
+								onPointerDown={(e) => e.stopPropagation()}
 								onChange={(e) => updateCell(i, { label: e.target.value })}
 							/>
 							<button
 								type="button"
 								className="mt-1.5 bg-red-500 text-white border-0 px-2 py-1 rounded cursor-pointer hover:opacity-90"
+								onPointerDown={(e) => e.stopPropagation()}
 								onClick={() => handleRemove(i)}
 							>
 								削除
@@ -249,6 +252,7 @@ export default function Grid({
 								type="file"
 								accept="image/*,.tif,.tiff"
 								multiple
+								onPointerDown={(e) => e.stopPropagation()}
 								onChange={(e) => onFileInput(e, i)}
 							/>
 						</div>
