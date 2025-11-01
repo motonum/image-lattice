@@ -16,6 +16,7 @@ export default function App() {
   const [cols, setCols] = useState<number>(2)
   const [gap, setGap] = useState<number>(10)
   const [fontSize, setFontSize] = useState<number>(16)
+  const [showPreview, setShowPreview] = useState<boolean>(false)
   const [cells, setCells] = useState<CellItem[]>([])
   const canvasRef = useRef<CanvasHandle | null>(null)
 
@@ -82,6 +83,7 @@ export default function App() {
         </label>
         <button onClick={handleGenerate}>Generate Grid</button>
         <button onClick={handleDownload}>Download PNG</button>
+        <button onClick={() => setShowPreview(p => !p)}>{showPreview ? 'Hide Preview' : 'Show Preview'}</button>
       </section>
 
       <Grid
@@ -99,6 +101,7 @@ export default function App() {
         cells={cells}
         gap={gap}
         fontSize={fontSize}
+        preview={showPreview}
       />
     </div>
   )

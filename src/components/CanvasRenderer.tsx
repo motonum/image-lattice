@@ -11,9 +11,10 @@ type Props = {
   cells: CellItem[]
   gap: number
   fontSize: number
+  preview?: boolean
 }
 
-const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(({ rows, cols, cells, gap, fontSize }, ref) => {
+const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(({ rows, cols, cells, gap, fontSize, preview = false }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useImperativeHandle(ref, () => ({
@@ -134,8 +135,16 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(({ rows, cols, cel
   }
 
   return (
-    <div style={{ display: 'none' }}>
-      <canvas ref={canvasRef} />
+    <div>
+      {/* Hidden canvas (kept for export) - still rendered but hidden when preview is off */}
+      <div style={{ display: preview ? 'none' : 'none' }} aria-hidden>
+        <canvas ref={canvasRef} />
+      </div>
+
+      {/* Preview area: visible when preview prop is true. We scale via CSS so large canvases fit in the UI. */}
+      <div className="canvas-preview" style={{ display: preview ? 'block' : 'none' }}>
+        <canvas ref={canvasRef} style={{ width: '100%', height: 'auto', maxWidth: '960px', border: '1px solid #ddd' }} />
+      </div>
     </div>
   )
 })
