@@ -4,6 +4,8 @@
     "module": "ESNext",
     "jsx": "react-jsx",
     "moduleResolution": "node",
+    "lib": ["DOM", "ES2020"],
+  "typeRoots": ["./src/types", "./node_modules/@types"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
