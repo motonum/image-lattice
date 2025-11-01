@@ -243,7 +243,7 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 
 				{/* Preview area: visible when preview prop is true. We scale via CSS so large canvases fit in the UI. */}
 				<div
-					className="mt-5 block max-w-[1000px]"
+					className="mt-5 block max-w-[960px] mx-auto"
 					style={{ display: preview ? "block" : "none" }}
 				>
 					<canvas
