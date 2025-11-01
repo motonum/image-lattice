@@ -1,3 +1,18 @@
+import {
+	DndContext,
+	PointerSensor,
+	closestCenter,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import {
+	SortableContext,
+	arrayMove,
+	rectSortingStrategy,
+	useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type React from "react";
 import type { CellItem } from "../App";
 
@@ -151,56 +166,67 @@ export default function Grid({
 
 	const stripExt = (name: string) => name.replace(/\.[^.]+$/, "");
 
-	// Dragging between cells (HTML5 drag)
-	const onDragStart = (e: React.DragEvent, index: number) => {
-		e.dataTransfer.setData("text/plain", String(index));
-	};
+	// DnD-kit setup for sortable grid
+	const sensors = useSensors(useSensor(PointerSensor));
 
-	const onDropToCell = (e: React.DragEvent, targetIndex: number) => {
-		e.preventDefault();
-		const srcIndexStr = e.dataTransfer.getData("text/plain");
-		if (!srcIndexStr) return;
-		const srcIndex = Number(srcIndexStr);
-		if (Number.isNaN(srcIndex)) return;
-		setAndShift(srcIndex, targetIndex);
-	};
-
-	const setAndShift = (srcIndex: number, targetIndex: number) => {
+	const onDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		if (!over) return;
+		const oldIndex = Number(active.id);
+		const newIndex = Number(over.id);
+		if (Number.isNaN(oldIndex) || Number.isNaN(newIndex)) return;
+		if (oldIndex === newIndex) return;
 		const copy = [...cells];
-		const item = copy[srcIndex];
-		// remove src
-		copy.splice(srcIndex, 1);
-		// insert at targetIndex
-		copy.splice(targetIndex, 0, item);
+		const moved = arrayMove(copy, oldIndex, newIndex);
 		// Ensure length N
-		while (copy.length < N) copy.push({ id: `${Math.random()}` });
-		if (copy.length > N) copy.length = N;
-		replaceCells(copy);
+		while (moved.length < N) moved.push({ id: `${Math.random()}` });
+		if (moved.length > N) moved.length = N;
+		replaceCells(moved);
 	};
 
 	const onDragOver = (e: React.DragEvent) => e.preventDefault();
 
+	function SortableItem({
+		id,
+		index,
+		children,
+	}: { id: string; index: number; children: React.ReactNode }) {
+		const { attributes, listeners, setNodeRef, transform, transition } =
+			useSortable({ id });
+		const style: React.CSSProperties = {
+			transform: CSS.Transform.toString(transform),
+			transition,
+		};
+		return (
+			<div
+				ref={setNodeRef}
+				style={style}
+				{...attributes}
+				{...listeners}
+				className="border border-dashed border-gray-300 p-1.5 min-h-[120px] bg-[#fafafa]"
+				onDragOver={onDragOver}
+			>
+				{children}
+			</div>
+		);
+	}
+
 	const renderCell = (i: number) => {
 		const cell = cells[i];
 		return (
-			<div
-				key={i}
-				className="border border-dashed border-gray-300 p-1.5 min-h-[120px] bg-[#fafafa]"
-				onDragOver={onDragOver}
-				onDrop={(e) => onDropToCell(e, i)}
-			>
+			<SortableItem key={i} id={`${i}`} index={i}>
 				<div
 					className="w-full h-full flex items-center justify-center"
 					onDragOver={(e) => e.preventDefault()}
 					onDrop={(e) => onFileDrop(e, i)}
 				>
 					{cell?.src ? (
-						<div
-							className="flex flex-col gap-2"
-							draggable
-							onDragStart={(e) => onDragStart(e, i)}
-						>
-							<img className="max-w-full max-h-[120px] block" src={cell.src} alt={cell.fileName} />
+						<div className="flex flex-col gap-2">
+							<img
+								className="max-w-full max-h-[120px] block"
+								src={cell.src}
+								alt={cell.fileName}
+							/>
 							<input
 								className="w-full"
 								type="text"
@@ -228,7 +254,7 @@ export default function Grid({
 						</div>
 					)}
 				</div>
-			</div>
+			</SortableItem>
 		);
 	};
 
@@ -236,11 +262,22 @@ export default function Grid({
 	for (let i = 0; i < N; i++) cellsToRender.push(renderCell(i));
 
 	return (
-		<div
-			className="grid grid-cols-1 gap-2"
-			style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+		<DndContext
+			sensors={sensors}
+			collisionDetection={closestCenter}
+			onDragEnd={onDragEnd}
 		>
-			{cellsToRender}
-		</div>
+			<SortableContext
+				items={Array.from({ length: N }).map((_, i) => `${i}`)}
+				strategy={rectSortingStrategy}
+			>
+				<div
+					className="grid grid-cols-1 gap-2"
+					style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+				>
+					{cellsToRender}
+				</div>
+			</SortableContext>
+		</DndContext>
 	);
 }
