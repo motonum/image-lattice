@@ -65,6 +65,12 @@ export default function SettingsSidebar({
 	previewCells,
 	hasAnyImage,
 }: Props) {
+	const [confirmOpen, setConfirmOpen] = React.useState(false);
+	const [pending, setPending] = React.useState<{
+		type: "rows" | "cols";
+		newValue: number;
+		removedCount: number;
+	} | null>(null);
 	return (
 		<Sidebar side="right" collapsible="none" className="w-80">
 			<SidebarContent>
@@ -80,13 +86,30 @@ export default function SettingsSidebar({
 						<NumericInput
 							id="rows-input"
 							outerState={rows}
-							setOuterState={setRows}
+							// intercept row changes to confirm if images would be removed
+							setOuterState={(n: number) => {
+								const newN = n * cols;
+								const removed = previewCells
+									.slice(newN)
+									.filter((c) => !!c.src).length;
+								if (removed > 0) {
+									setPending({
+										type: "rows",
+										newValue: n,
+										removedCount: removed,
+									});
+									setConfirmOpen(true);
+								} else {
+									setRows(n);
+								}
+							}}
 							disabled={false}
 							className="w-16"
 							rejectNegative
 							integer
 							min={1}
 							max={10}
+							defaultValue={1}
 						/>
 						<Label htmlFor="cols-input" className="flex items-center">
 							<div>Cols:</div>
@@ -94,13 +117,30 @@ export default function SettingsSidebar({
 						<NumericInput
 							id="cols-input"
 							outerState={cols}
-							setOuterState={setCols}
+							// intercept col changes to confirm if images would be removed
+							setOuterState={(n: number) => {
+								const newN = rows * n;
+								const removed = previewCells
+									.slice(newN)
+									.filter((c) => !!c.src).length;
+								if (removed > 0) {
+									setPending({
+										type: "cols",
+										newValue: n,
+										removedCount: removed,
+									});
+									setConfirmOpen(true);
+								} else {
+									setCols(n);
+								}
+							}}
 							disabled={false}
 							className="w-16"
 							rejectNegative
 							integer
 							min={1}
 							max={10}
+							defaultValue={1}
 						/>
 					</div>
 					<div className="flex gap-2">
@@ -112,6 +152,7 @@ export default function SettingsSidebar({
 							outerState={gap}
 							setOuterState={setGap}
 							disabled={false}
+							defaultValue={10}
 							className="w-16"
 							rejectNegative
 							integer
@@ -184,6 +225,53 @@ export default function SettingsSidebar({
 						/>
 					</div>
 				</section>
+				{/* Confirmation dialog when reducing grid would remove images */}
+				<Dialog
+					open={confirmOpen}
+					onOpenChange={(v) => {
+						if (!v) {
+							setPending(null);
+						}
+						setConfirmOpen(v);
+					}}
+				>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Confirm grid change</DialogTitle>
+							<DialogDescription>
+								この変更により {pending?.removedCount ?? 0}{" "}
+								個の画像がグリッドから削除されます。よろしいですか？
+							</DialogDescription>
+						</DialogHeader>
+						<DialogFooter>
+							<Button
+								variant="outline"
+								onClick={() => {
+									// cancel
+									setConfirmOpen(false);
+									setPending(null);
+								}}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => {
+									if (!pending) return;
+									if (pending.type === "rows") {
+										setRows(pending.newValue);
+									} else {
+										setCols(pending.newValue);
+									}
+									setConfirmOpen(false);
+									setPending(null);
+								}}
+							>
+								Confirm
+							</Button>
+						</DialogFooter>
+						<DialogClose />
+					</DialogContent>
+				</Dialog>
 			</SidebarContent>
 		</Sidebar>
 	);

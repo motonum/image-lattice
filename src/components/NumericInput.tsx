@@ -32,8 +32,7 @@ const NumericInput: React.FC<Props> = ({
 
 	useEffect(() => {
 		setRawValue(outerState.toString());
-		setOuterState(outerState);
-	}, [outerState, setOuterState]);
+	}, [outerState]);
 
 	const handleBlur = useCallback(() => {
 		const parsed = Number.parseFloat(rawValue);
