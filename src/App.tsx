@@ -59,14 +59,35 @@ export default function App() {
 	const [cells, setCells] = useState<CellItem[]>([]);
 	const canvasRef = useRef<CanvasHandle | null>(null);
 
+	// Minimal IFD shape for TIFF decoding
+	type IfdMinimal = { width?: number; height?: number };
+
 	// whether there is at least one loaded image to export
 	const hasAnyImage = cells.some((c) => !!c.src);
 
+	// Initialize or resize the grid while preserving images that still fit.
+	// When shrinking, pack existing loaded images to the front (top-left) so
+	// that as many images as possible are retained; any overflow beyond the
+	// new capacity is discarded.
 	const initGrid = React.useCallback((r: number, c: number) => {
-		const N = r * c;
-		const items: CellItem[] = [];
-		for (let i = 0; i < N; i++) items.push({ id: `${i}` });
-		setCells(items);
+		setCells((prev) => {
+			const N = r * c;
+			// collect existing loaded images in document order
+			const loaded = prev
+				.filter((cell) => cell?.src)
+				.map((cell) => ({ ...cell }));
+			// keep as many as fit
+			const keep = loaded.slice(0, N);
+			const newCells: CellItem[] = [];
+			for (let i = 0; i < N; i++) {
+				if (i < keep.length) {
+					newCells.push({ ...keep[i], id: `${i}` });
+				} else {
+					newCells.push({ id: `${i}` });
+				}
+			}
+			return newCells;
+		});
 	}, []);
 
 	React.useEffect(() => {
