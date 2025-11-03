@@ -134,7 +134,7 @@ export default function SettingsSidebar({
 		setConfirmOpen(false);
 	};
 	return (
-		<Sidebar side="right" collapsible="none" className="w-80">
+		<Sidebar side="right" collapsible="none" className="w-72 flex-none">
 			<SidebarContent>
 				<SidebarHeader>
 					<h2 className="text-sm font-medium">Settings</h2>
