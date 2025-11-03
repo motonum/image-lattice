@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type LabelMode = "below" | "above" | "overlay";
-type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha";
+type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 
 // Minimal IFD shape for TIFF decoding
 type IfdMinimal = { width?: number; height?: number };
@@ -177,6 +177,7 @@ export default function useGrid() {
 			return;
 		}
 
+		// For non-user strategies (including "none") save previous labels
 		if (!prevLabels) setPrevLabels(cells.map((c) => c.label));
 		setNumberingStrategy(newStrategy);
 	};
@@ -188,13 +189,15 @@ export default function useGrid() {
 		for (let i = 0; i < cells.length; i++) {
 			const cell = cells[i];
 			if (cell?.src) {
-				let label = "";
+				let label: string | undefined = "";
 				if (numberingStrategy === "numeric") {
 					label = `(${counter})`;
 				} else if (numberingStrategy === "alpha") {
 					label = `(${indexToAlpha(counter - 1)})`;
 				} else if (numberingStrategy === "upper-alpha") {
 					label = `(${indexToAlpha(counter - 1).toUpperCase()})`;
+				} else if (numberingStrategy === "none") {
+					label = undefined;
 				}
 				counter++;
 				next.push({ ...cell, label });

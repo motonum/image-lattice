@@ -1,6 +1,15 @@
 import ExportDialog from "@/components/ExportDialog";
 import NumericInput from "@/components/NumericInput";
 import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,7 +30,7 @@ import React from "react";
 
 type LabelMode = "below" | "above" | "overlay";
 
-type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha";
+type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 
 interface Props {
 	rows: number;
@@ -126,6 +135,7 @@ export default function SettingsSidebar({
 								<SelectItem value="numeric">1,2,3,...</SelectItem>
 								<SelectItem value="alpha">a,b,c,...</SelectItem>
 								<SelectItem value="upper-alpha">A,B,C,...</SelectItem>
+								<SelectItem value="none">None</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
