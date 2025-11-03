@@ -187,7 +187,7 @@ const Cell = ({ i, cells, updateCell, disableLabelInput }: RenderCellProps) => {
 	};
 
 	return (
-		<SortableItem key={i} id={`${i}`} index={i}>
+		<SortableItem id={cell.id} index={i}>
 			<div
 				className="w-full h-full flex items-center justify-center"
 				onDragOver={(e) => e.preventDefault()}
@@ -276,11 +276,12 @@ export default function Grid({
 	const onDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!over) return;
-		const oldIndex = Number(active.id);
-		const newIndex = Number(over.id);
-		if (Number.isNaN(oldIndex) || Number.isNaN(newIndex)) return;
-		if (oldIndex === newIndex) return;
 		const copy = [...cells];
+		// DnD-kit item ids are cell.id strings now; find their indices
+		const oldIndex = copy.findIndex((c) => c.id === String(active.id));
+		const newIndex = copy.findIndex((c) => c.id === String(over.id));
+		if (oldIndex === -1 || newIndex === -1) return;
+		if (oldIndex === newIndex) return;
 		const moved = arrayMove(copy, oldIndex, newIndex);
 		// Ensure length N
 		while (moved.length < N) moved.push({ id: `${Math.random()}` });
@@ -295,16 +296,16 @@ export default function Grid({
 			onDragEnd={onDragEnd}
 		>
 			<SortableContext
-				items={Array.from({ length: N }).map((_, i) => `${i}`)}
+				items={cells.slice(0, N).map((c) => c.id)}
 				strategy={rectSortingStrategy}
 			>
 				<div
 					className="grid grid-cols-1 gap-2"
 					style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
 				>
-					{Array.from({ length: N }, (_, i) => i).map((i) => (
+					{cells.slice(0, N).map((cell, i) => (
 						<Cell
-							key={`cell-${i}`}
+							key={cell.id}
 							i={i}
 							cells={cells}
 							updateCell={updateCell}
