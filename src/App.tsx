@@ -1,3 +1,10 @@
+import { Button } from "@/components/ui/button";
+import {
+	Sidebar,
+	SidebarContent,
+	SidebarHeader,
+	SidebarProvider,
+} from "@/components/ui/sidebar";
 import React, { useState, useRef } from "react";
 import CanvasRenderer, { type CanvasHandle } from "./components/CanvasRenderer";
 import Grid from "./components/Grid";
@@ -40,10 +47,6 @@ export default function App() {
 	React.useEffect(() => {
 		initGrid(rows, cols);
 	}, [initGrid, rows, cols]);
-
-	const handleGenerate = () => {
-		initGrid(rows, cols);
-	};
 
 	const updateCell = (index: number, item: Partial<CellItem>) => {
 		setCells((prev) => {
@@ -117,103 +120,128 @@ export default function App() {
 	};
 
 	return (
-		<div className="mx-auto max-w-[1100px]">
-			<header>
-				<h1>Image Lattice</h1>
-			</header>
+		<SidebarProvider>
+			<div className="flex min-h-screen grow">
+				<div className="mx-auto max-w-[1100px] w-full p-2">
+					<header>
+						<h1>Image Lattice</h1>
+					</header>
 
-			<section className="flex gap-2 items-center mb-4 flex-wrap">
-				<label>
-					Rows:
-					<input
-						type="number"
-						min={1}
-						value={rows}
-						onChange={(e) => setRows(Number(e.target.value))}
+					<Grid
+						rows={rows}
+						cols={cols}
+						cells={cells}
+						updateCell={updateCell}
+						replaceCells={replaceCells}
 					/>
-				</label>
-				<label>
-					Cols:
-					<input
-						type="number"
-						min={1}
-						value={cols}
-						onChange={(e) => setCols(Number(e.target.value))}
-					/>
-				</label>
-				<label>
-					Gap (px):
-					<input
-						type="number"
-						min={0}
-						value={gap}
-						onChange={(e) => setGap(Number(e.target.value))}
-					/>
-				</label>
-				<label>
-					Label font (px):
-					<input
-						type="number"
-						min={8}
-						max={72}
-						value={fontSize}
-						onChange={(e) => setFontSize(Number(e.target.value))}
-					/>
-				</label>
-				<label>
-					Label mode:
-					<select
-						value={labelMode}
-						onChange={(e) => setLabelMode(e.target.value as LabelMode)}
-					>
-						<option value="below">Below image</option>
-						<option value="above">Above image</option>
-						<option value="overlay">Overlay (top-left)</option>
-					</select>
-				</label>
-				<button type="button" onClick={handleGenerate}>
-					Generate Grid
-				</button>
-				<button type="button" onClick={handleDownload}>
-					Download PNG
-				</button>
-				<button type="button" onClick={() => setShowPreview((p) => !p)}>
-					{showPreview ? "Hide Preview" : "Show Preview"}
-				</button>
-				<label>
-					Label numbering:
-					<select
-						value={numberingStrategy}
-						onChange={(e) =>
-							handleNumberingStrategyChange(e.target.value as NumberingStrategy)
-						}
-					>
-						<option value="user">User defined</option>
-						<option value="numeric">1,2,3,...</option>
-						<option value="alpha">a,b,c,...</option>
-						<option value="upper-alpha">A,B,C,...</option>
-					</select>
-				</label>
-			</section>
 
-			<Grid
-				rows={rows}
-				cols={cols}
-				cells={cells}
-				updateCell={updateCell}
-				replaceCells={replaceCells}
-			/>
+					<CanvasRenderer
+						ref={canvasRef}
+						rows={rows}
+						cols={cols}
+						cells={cells}
+						gap={gap}
+						fontSize={fontSize}
+						preview={showPreview}
+						labelMode={labelMode}
+					/>
+				</div>
 
-			<CanvasRenderer
-				ref={canvasRef}
-				rows={rows}
-				cols={cols}
-				cells={cells}
-				gap={gap}
-				fontSize={fontSize}
-				preview={showPreview}
-				labelMode={labelMode}
-			/>
-		</div>
+				<Sidebar side="right" collapsible="none">
+					<SidebarContent>
+						<SidebarHeader>
+							<h2 className="text-sm font-medium">Settings</h2>
+						</SidebarHeader>
+
+						<section className="flex flex-col gap-3 p-2">
+							<label>
+								Rows:
+								<input
+									type="number"
+									min={1}
+									value={rows}
+									onChange={(e) => setRows(Number(e.target.value))}
+								/>
+							</label>
+
+							<label>
+								Cols:
+								<input
+									type="number"
+									min={1}
+									value={cols}
+									onChange={(e) => setCols(Number(e.target.value))}
+								/>
+							</label>
+
+							<label>
+								Gap (px):
+								<input
+									type="number"
+									min={0}
+									value={gap}
+									onChange={(e) => setGap(Number(e.target.value))}
+								/>
+							</label>
+
+							<label>
+								Label font (px):
+								<input
+									type="number"
+									min={8}
+									max={72}
+									value={fontSize}
+									onChange={(e) => setFontSize(Number(e.target.value))}
+								/>
+							</label>
+
+							<label>
+								Label mode:
+								<select
+									value={labelMode}
+									onChange={(e) => setLabelMode(e.target.value as LabelMode)}
+								>
+									<option value="overlay">Overlay</option>
+									<option value="below">Below image</option>
+									<option value="above">Above image</option>
+								</select>
+							</label>
+
+							<div className="flex gap-2">
+								<Button type="button" onClick={handleDownload}>
+									Download PNG
+								</Button>
+							</div>
+
+							<label>
+								<input
+									type="checkbox"
+									checked={showPreview}
+									onChange={() => setShowPreview((p) => !p)}
+								/>{" "}
+								Show preview
+							</label>
+
+							<label>
+								Label numbering:
+								<select
+									value={numberingStrategy}
+									onChange={(e) =>
+										handleNumberingStrategyChange(
+											e.target.value as NumberingStrategy,
+										)
+									}
+								>
+									<option value="user">User defined</option>
+									<option value="numeric">1,2,3,...</option>
+									<option value="alpha">a,b,c,...</option>
+									<option value="upper-alpha">A,B,C,...</option>
+								</select>
+							</label>
+						</section>
+					</SidebarContent>
+				</Sidebar>
+			</div>
+		</SidebarProvider>
 	);
 }
