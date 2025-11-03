@@ -226,7 +226,7 @@ export default function Grid({
 					{cell?.src ? (
 						<div className="flex flex-col gap-2">
 							<img
-								className="max-w-full max-h-[120px] block"
+								className="w-auto h-auto max-w-full max-h-[120px] object-contain block"
 								src={cell.src}
 								alt={cell.fileName}
 								draggable={false}
