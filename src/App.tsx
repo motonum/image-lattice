@@ -5,9 +5,21 @@ import {
 	SidebarHeader,
 	SidebarProvider,
 } from "@/components/ui/sidebar";
+import { Check } from "lucide-react";
 import React, { useState, useRef } from "react";
 import CanvasRenderer, { type CanvasHandle } from "./components/CanvasRenderer";
 import Grid from "./components/Grid";
+import NumericInput from "./components/NumericInput";
+import { Checkbox } from "./components/ui/checkbox";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./components/ui/select";
 
 type LabelMode = "below" | "above" | "overlay";
 type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha";
@@ -22,7 +34,7 @@ export type CellItem = {
 };
 
 export default function App() {
-	const [rows, setRows] = useState<number>(2);
+	const [rows, setRows] = useState<number>(1);
 	const [cols, setCols] = useState<number>(2);
 	const [gap, setGap] = useState<number>(10);
 	const [fontSize, setFontSize] = useState<number>(72);
@@ -147,97 +159,132 @@ export default function App() {
 					/>
 				</div>
 
-				<Sidebar side="right" collapsible="none">
+				<Sidebar side="right" collapsible="none" className="w-72">
 					<SidebarContent>
 						<SidebarHeader>
 							<h2 className="text-sm font-medium">Settings</h2>
 						</SidebarHeader>
 
 						<section className="flex flex-col gap-3 p-2">
-							<label>
-								Rows:
-								<input
-									type="number"
+							<div className="flex gap-2">
+								<Label htmlFor="rows-input" className="flex items-center">
+									<div>Rows:</div>
+								</Label>
+								<NumericInput
+									id="rows-input"
+									outerState={rows}
+									setOuterState={setRows}
+									disabled={false}
+									className="w-16"
+									rejectNegative
+									integer
 									min={1}
-									value={rows}
-									onChange={(e) => setRows(Number(e.target.value))}
+									max={10}
 								/>
-							</label>
-
-							<label>
-								Cols:
-								<input
-									type="number"
+								<Label htmlFor="cols-input" className="flex items-center">
+									<div>Cols:</div>
+								</Label>
+								<NumericInput
+									id="cols-input"
+									outerState={cols}
+									setOuterState={setCols}
+									disabled={false}
+									className="w-16"
+									rejectNegative
+									integer
 									min={1}
-									value={cols}
-									onChange={(e) => setCols(Number(e.target.value))}
+									max={10}
 								/>
-							</label>
-
-							<label>
-								Gap (px):
-								<input
+							</div>
+							<div className="flex gap-2">
+								<Label htmlFor="gap-input" className="flex items-center">
+									<div>Gap:</div>
+								</Label>
+								<NumericInput
+									id="gap-input"
+									outerState={gap}
+									setOuterState={setGap}
+									disabled={false}
+									className="w-16"
+									rejectNegative
+									integer
+								/>
+							</div>
+							<div className="flex gap-2">
+								<Label
+									htmlFor="label-type-select"
+									className="flex items-center"
+								>
+									<div>Label type:</div>
+								</Label>
+								<Select
+									value={numberingStrategy}
+									onValueChange={(e) =>
+										handleNumberingStrategyChange(e as NumberingStrategy)
+									}
+								>
+									<SelectTrigger id="label-type-select" className="w-36">
+										<SelectValue placeholder="Label numbering" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="user">User defined</SelectItem>
+										<SelectItem value="numeric">1,2,3,...</SelectItem>
+										<SelectItem value="alpha">a,b,c,...</SelectItem>
+										<SelectItem value="upper-alpha">A,B,C,...</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="flex gap-2">
+								<Label htmlFor="fontsize-input" className="flex items-center">
+									<div>Label font:</div>
+								</Label>
+								<Input
 									type="number"
+									id="fontsize-input"
+									className="w-16"
 									min={0}
-									value={gap}
-									onChange={(e) => setGap(Number(e.target.value))}
-								/>
-							</label>
-
-							<label>
-								Label font (px):
-								<input
-									type="number"
-									min={8}
-									max={72}
 									value={fontSize}
 									onChange={(e) => setFontSize(Number(e.target.value))}
 								/>
-							</label>
-
-							<label>
-								Label mode:
-								<select
-									value={labelMode}
-									onChange={(e) => setLabelMode(e.target.value as LabelMode)}
+							</div>
+							<div className="flex gap-2">
+								<Label
+									htmlFor="label-mode-select"
+									className="flex items-center"
 								>
-									<option value="overlay">Overlay</option>
-									<option value="below">Below image</option>
-									<option value="above">Above image</option>
-								</select>
-							</label>
+									<div>Label mode:</div>
+								</Label>
+								<Select
+									value={labelMode}
+									onValueChange={(e) => setLabelMode(e as LabelMode)}
+								>
+									<SelectTrigger id="label-mode-select" className="w-36">
+										<SelectValue placeholder="Label mode" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="overlay">Overlay</SelectItem>
+										<SelectItem value="below">Below image</SelectItem>
+										<SelectItem value="above">Above image</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div className="flex items-center">
+								<Checkbox
+									id="show-preview-checkbox"
+									checked={showPreview}
+									onCheckedChange={() => setShowPreview((p) => !p)}
+								/>
+								<Label htmlFor="show-preview-checkbox" className="ml-2">
+									Show preview
+								</Label>
+							</div>
 
 							<div className="flex gap-2">
 								<Button type="button" onClick={handleDownload}>
 									Download PNG
 								</Button>
 							</div>
-
-							<label>
-								<input
-									type="checkbox"
-									checked={showPreview}
-									onChange={() => setShowPreview((p) => !p)}
-								/>{" "}
-								Show preview
-							</label>
-
-							<label>
-								Label numbering:
-								<select
-									value={numberingStrategy}
-									onChange={(e) =>
-										handleNumberingStrategyChange(
-											e.target.value as NumberingStrategy,
-										)
-									}
-								>
-									<option value="user">User defined</option>
-									<option value="numeric">1,2,3,...</option>
-									<option value="alpha">a,b,c,...</option>
-									<option value="upper-alpha">A,B,C,...</option>
-								</select>
-							</label>
 						</section>
 					</SidebarContent>
 				</Sidebar>

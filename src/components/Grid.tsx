@@ -13,8 +13,10 @@ import {
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type React from "react";
+import React, { useMemo } from "react";
 import type { CellItem } from "../App";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 // Minimal IFD shape we read from UTIF for our use (width/height). Keep conservative.
 type IfdMinimal = {
@@ -37,7 +39,7 @@ export default function Grid({
 	updateCell,
 	replaceCells,
 }: Props) {
-	const N = rows * cols;
+	const N = useMemo(() => rows * cols, [rows, cols]);
 
 	const handleRemove = (index: number) => {
 		const cell = cells[index];
@@ -212,6 +214,7 @@ export default function Grid({
 	}
 
 	const renderCell = (i: number) => {
+		const fileInputRef = React.useRef<HTMLInputElement>(null);
 		const cell = cells[i];
 		return (
 			<SortableItem key={i} id={`${i}`} index={i}>
@@ -228,33 +231,48 @@ export default function Grid({
 								alt={cell.fileName}
 								draggable={false}
 							/>
-							<input
+							<Input
 								className="w-full"
-								type="text"
 								value={cell.label ?? ""}
 								onPointerDown={(e) => e.stopPropagation()}
-								onChange={(e) => updateCell(i, { label: e.target.value })}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+									updateCell(i, { label: e.target.value })
+								}
 							/>
-							<button
-								type="button"
-								className="mt-1.5 bg-red-500 text-white border-0 px-2 py-1 rounded cursor-pointer hover:opacity-90"
+							<Button
+								variant="destructive"
+								size="sm"
+								className="mt-1.5"
 								onPointerDown={(e) => e.stopPropagation()}
 								onClick={() => handleRemove(i)}
 							>
-								削除
-							</button>
+								Delete
+							</Button>
 						</div>
 					) : (
 						<div className="flex flex-col items-center gap-2">
 							<div>Drop image or</div>
 							<input
-								className="w-full"
 								type="file"
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+									onFileInput(e, i)
+								}
 								accept="image/*,.tif,.tiff"
-								multiple
-								onPointerDown={(e) => e.stopPropagation()}
-								onChange={(e) => onFileInput(e, i)}
+								className="hidden"
+								ref={fileInputRef}
 							/>
+							<Button
+								className="w-full"
+								variant="outline"
+								onPointerDown={(e) => {
+									// Prevent DnD-kit from intercepting the pointer and blocking the click
+									e.stopPropagation();
+									e.preventDefault();
+									fileInputRef.current?.click();
+								}}
+							>
+								Select File
+							</Button>
 						</div>
 					)}
 				</div>
