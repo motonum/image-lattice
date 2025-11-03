@@ -10,7 +10,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -218,13 +217,16 @@ export default function SettingsSidebar({
 						<Label htmlFor="fontsize-input" className="flex items-center">
 							<div>Label font:</div>
 						</Label>
-						<Input
-							type="number"
+						<NumericInput
 							id="fontsize-input"
+							outerState={fontSize}
+							setOuterState={setFontSize}
+							disabled={false}
 							className="w-16"
+							rejectNegative
+							integer
 							min={0}
-							value={fontSize}
-							onChange={(e) => setFontSize(Number(e.target.value))}
+							defaultValue={72}
 						/>
 					</div>
 					<div className="flex gap-2">
