@@ -1,3 +1,4 @@
+import type { CellItem } from "@/types/cell";
 import React, {
 	forwardRef,
 	useImperativeHandle,
@@ -5,7 +6,6 @@ import React, {
 	useEffect,
 	useCallback,
 } from "react";
-import type { CellItem } from "../App";
 
 export type CanvasHandle = {
 	exportPNG: () => Promise<Blob>;

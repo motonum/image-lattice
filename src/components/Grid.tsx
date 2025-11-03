@@ -1,3 +1,4 @@
+import type { CellItem } from "@/types/cell";
 import {
 	DndContext,
 	PointerSensor,
@@ -13,8 +14,7 @@ import {
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import React, { useMemo } from "react";
-import type { CellItem } from "../App";
+import React from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
