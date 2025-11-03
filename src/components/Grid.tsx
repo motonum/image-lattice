@@ -53,9 +53,10 @@ type RenderCellProps = {
 	i: number;
 	cells: CellItem[];
 	updateCell: (index: number, item: Partial<CellItem>) => void;
+	disableLabelInput?: boolean;
 };
 
-const Cell = ({ i, cells, updateCell }: RenderCellProps) => {
+const Cell = ({ i, cells, updateCell, disableLabelInput }: RenderCellProps) => {
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 	const cell = cells[i];
 
@@ -207,6 +208,7 @@ const Cell = ({ i, cells, updateCell }: RenderCellProps) => {
 							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 								updateCell(i, { label: e.target.value })
 							}
+							disabled={disableLabelInput}
 						/>
 						<Button
 							variant="destructive"
@@ -255,6 +257,7 @@ type Props = {
 	cells: CellItem[];
 	updateCell: (index: number, item: Partial<CellItem>) => void;
 	replaceCells: (newCells: CellItem[]) => void;
+	disableLabelInput?: boolean;
 };
 
 export default function Grid({
@@ -263,6 +266,7 @@ export default function Grid({
 	cells,
 	updateCell,
 	replaceCells,
+	disableLabelInput,
 }: Props) {
 	const N = rows * cols;
 
@@ -304,6 +308,7 @@ export default function Grid({
 							i={i}
 							cells={cells}
 							updateCell={updateCell}
+							disableLabelInput={disableLabelInput}
 						/>
 					))}
 				</div>

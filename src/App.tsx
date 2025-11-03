@@ -207,7 +207,7 @@ export default function App() {
 		}
 	};
 
-	const indexToAlpha = (n: number) => {
+	const indexToAlpha = React.useCallback((n: number) => {
 		// 0 -> a, 25 -> z, 26 -> aa
 		let i = n;
 		let s = "";
@@ -216,7 +216,7 @@ export default function App() {
 			i = Math.floor(i / 26) - 1;
 		}
 		return s;
-	};
+	}, []);
 
 	const handleNumberingStrategyChange = (newStrategy: NumberingStrategy) => {
 		if (newStrategy === numberingStrategy) return;
@@ -235,25 +235,39 @@ export default function App() {
 		// entering numeric/alpha mode: save previous labels if not already saved
 		if (!prevLabels) setPrevLabels(cells.map((c) => c.label));
 
-		const newCells = [...cells];
-		let counter = 1;
-		for (let i = 0; i < newCells.length; i++) {
-			if (newCells[i].src) {
-				let label = "";
-				if (newStrategy === "numeric") {
-					label = `(${counter})`;
-				} else if (newStrategy === "alpha") {
-					label = `(${indexToAlpha(counter - 1)})`;
-				} else if (newStrategy === "upper-alpha") {
-					label = `(${indexToAlpha(counter - 1).toUpperCase()})`;
-				}
-				newCells[i] = { ...newCells[i], label };
-				counter++;
-			}
-		}
-		replaceCells(newCells);
+		// Do not mutate the canonical `cells` here. We compute preview/export labels
+		// from `cells` on render. Save previous labels so we can restore them when
+		// switching back to 'user'.
 		setNumberingStrategy(newStrategy);
 	};
+
+	// Compute a derived cells array used for preview/export that applies
+	// automatic numbering when `numberingStrategy` !== 'user'. This keeps the
+	// canonical `cells` state untouched so cell inputs continue to show the
+	// user's labels.
+	const previewCells = React.useMemo(() => {
+		if (numberingStrategy === "user") return cells;
+		const next: CellItem[] = [];
+		let counter = 1;
+		for (let i = 0; i < cells.length; i++) {
+			const cell = cells[i];
+			if (cell?.src) {
+				let label = "";
+				if (numberingStrategy === "numeric") {
+					label = `(${counter})`;
+				} else if (numberingStrategy === "alpha") {
+					label = `(${indexToAlpha(counter - 1)})`;
+				} else if (numberingStrategy === "upper-alpha") {
+					label = `(${indexToAlpha(counter - 1).toUpperCase()})`;
+				}
+				counter++;
+				next.push({ ...cell, label });
+			} else {
+				next.push({ ...cell });
+			}
+		}
+		return next;
+	}, [cells, numberingStrategy, indexToAlpha]);
 
 	const handleDownload = async () => {
 		if (!canvasRef.current) return;
@@ -289,6 +303,7 @@ export default function App() {
 						cells={cells}
 						updateCell={updateCell}
 						replaceCells={replaceCells}
+						disableLabelInput={numberingStrategy !== "user"}
 					/>
 
 					{/* Hidden canvas renderer used for export; keep preview=false so canvas stays offscreen */}
@@ -296,7 +311,7 @@ export default function App() {
 						ref={canvasRef}
 						rows={rows}
 						cols={cols}
-						cells={cells}
+						cells={previewCells}
 						gap={gap}
 						fontSize={fontSize}
 						preview={false}
@@ -439,7 +454,7 @@ export default function App() {
 											<CanvasRenderer
 												rows={rows}
 												cols={cols}
-												cells={cells}
+												cells={previewCells}
 												gap={gap}
 												fontSize={fontSize}
 												preview={true}
