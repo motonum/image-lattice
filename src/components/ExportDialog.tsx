@@ -40,7 +40,7 @@ export default function ExportDialog({
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = "grid.png";
+		a.download = "lattice.png";
 		document.body.appendChild(a);
 		a.click();
 		a.remove();
