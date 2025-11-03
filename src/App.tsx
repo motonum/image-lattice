@@ -2,13 +2,9 @@ import SettingsSidebar from "@/components/SettingsSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import useGrid from "@/hooks/useGrid";
 import type React from "react";
-import { useRef } from "react";
-import CanvasRenderer, { type CanvasHandle } from "./components/CanvasRenderer";
 import Grid from "./components/Grid";
 
 export default function App() {
-	const canvasRef = useRef<CanvasHandle | null>(null);
-
 	const {
 		rows,
 		setRows,
@@ -30,18 +26,7 @@ export default function App() {
 		hasAnyImage,
 	} = useGrid();
 
-	const handleDownload = async () => {
-		if (!canvasRef.current) return;
-		const blob = await canvasRef.current.exportPNG();
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = "grid.png";
-		document.body.appendChild(a);
-		a.click();
-		a.remove();
-		URL.revokeObjectURL(url);
-	};
+	// Download is handled inside ExportDialog now.
 
 	return (
 		<SidebarProvider>
@@ -67,18 +52,6 @@ export default function App() {
 						// label editing is driven from inside the hook/Settings UI; Grid stays dumb
 						disableLabelInput={false}
 					/>
-
-					{/* Hidden canvas renderer used for export; keep preview=false so canvas stays offscreen */}
-					<CanvasRenderer
-						ref={canvasRef}
-						rows={rows}
-						cols={cols}
-						cells={previewCells}
-						gap={gap}
-						fontSize={fontSize}
-						preview={false}
-						labelMode={labelMode}
-					/>
 				</div>
 
 				<SettingsSidebar
@@ -96,7 +69,6 @@ export default function App() {
 					onNumberingStrategyChange={handleNumberingStrategyChange}
 					previewCells={previewCells}
 					hasAnyImage={hasAnyImage}
-					handleDownload={handleDownload}
 				/>
 			</div>
 		</SidebarProvider>

@@ -38,7 +38,6 @@ interface Props {
 	onNumberingStrategyChange: (s: NumberingStrategy) => void;
 	previewCells: CellItem[];
 	hasAnyImage: boolean;
-	handleDownload: () => void; // Made optional to avoid breaking changes
 }
 
 export default function SettingsSidebar({
@@ -56,10 +55,9 @@ export default function SettingsSidebar({
 	onNumberingStrategyChange,
 	previewCells,
 	hasAnyImage,
-	handleDownload, // Correctly destructured
 }: Props) {
 	return (
-		<Sidebar side="right" collapsible="none" className="w-72">
+		<Sidebar side="right" collapsible="none" className="w-80">
 			<SidebarContent>
 				<SidebarHeader>
 					<h2 className="text-sm font-medium">Settings</h2>
@@ -173,7 +171,6 @@ export default function SettingsSidebar({
 							fontSize={fontSize}
 							labelMode={labelMode}
 							hasAnyImage={hasAnyImage}
-							handleDownload={handleDownload}
 						/>
 					</div>
 				</section>
