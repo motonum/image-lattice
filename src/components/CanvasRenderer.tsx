@@ -18,6 +18,14 @@ type Props = {
 	gap: number;
 	fontSize: number;
 	preview?: boolean;
+	/**
+	 * CSS value for the preview canvas max-height (e.g. '70vh').
+	 * When provided, the preview canvas will be constrained to this height and
+	 * shrink proportionally so the dialog does not need to scroll vertically.
+	 */
+	previewMaxHeight?: string;
+	/** CSS value for preview max-width (e.g. '90vw' or '960px') */
+	previewMaxWidth?: string;
 	labelMode?: "below" | "above" | "overlay";
 };
 
@@ -30,6 +38,8 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 			gap,
 			fontSize,
 			preview = false,
+			previewMaxHeight,
+			previewMaxWidth,
 			labelMode = "overlay",
 		},
 		ref,
@@ -241,18 +251,25 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 					<canvas ref={canvasRef} />
 				</div>
 
-				{/* Preview area: visible when preview prop is true. We scale via CSS so large canvases fit in the UI. */}
+				{/* Preview area: visible when preview prop is true. We limit max width/height via props so
+				   tall images scale down to fit the viewport rather than causing the dialog to scroll. */}
 				<div
-					className="mt-5 block max-w-[960px] mx-auto"
-					style={{ display: preview ? "block" : "none" }}
+					className="mt-5 block mx-auto"
+					style={{
+						display: preview ? "block" : "none",
+						maxWidth: preview ? previewMaxWidth || "960px" : undefined,
+					}}
 				>
 					<canvas
 						ref={canvasRef}
 						style={{
-							width: "100%",
+							width: "100%", // scale to container's width (honors maxWidth on container)
 							height: "auto",
-							maxWidth: "960px",
+							maxWidth: previewMaxWidth || "960px",
+							maxHeight: previewMaxHeight || undefined,
 							border: "1px solid #ddd",
+							display: "block",
+							margin: "0 auto",
 						}}
 					/>
 				</div>

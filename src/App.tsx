@@ -1,5 +1,15 @@
 import { Button } from "@/components/ui/button";
 import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import {
 	Sidebar,
 	SidebarContent,
 	SidebarHeader,
@@ -45,9 +55,12 @@ export default function App() {
 	// numberingStrategy: 'user' means leave labels as user-defined; 'numeric'/'alpha' trigger auto-numbering
 	const [numberingStrategy, setNumberingStrategy] =
 		useState<NumberingStrategy>("user");
-	const [showPreview, setShowPreview] = useState<boolean>(false);
+	// preview is now shown inside an Export sheet/dialog; keep hidden canvas renderer available for export
 	const [cells, setCells] = useState<CellItem[]>([]);
 	const canvasRef = useRef<CanvasHandle | null>(null);
+
+	// whether there is at least one loaded image to export
+	const hasAnyImage = cells.some((c) => !!c.src);
 
 	const initGrid = React.useCallback((r: number, c: number) => {
 		const N = r * c;
@@ -147,6 +160,7 @@ export default function App() {
 						replaceCells={replaceCells}
 					/>
 
+					{/* Hidden canvas renderer used for export; keep preview=false so canvas stays offscreen */}
 					<CanvasRenderer
 						ref={canvasRef}
 						rows={rows}
@@ -154,7 +168,7 @@ export default function App() {
 						cells={cells}
 						gap={gap}
 						fontSize={fontSize}
-						preview={showPreview}
+						preview={false}
 						labelMode={labelMode}
 					/>
 				</div>
@@ -269,21 +283,53 @@ export default function App() {
 								</Select>
 							</div>
 
-							<div className="flex items-center">
-								<Checkbox
-									id="show-preview-checkbox"
-									checked={showPreview}
-									onCheckedChange={() => setShowPreview((p) => !p)}
-								/>
-								<Label htmlFor="show-preview-checkbox" className="ml-2">
-									Show preview
-								</Label>
-							</div>
-
+							{/* Export flow: open sheet to preview and download */}
 							<div className="flex gap-2">
-								<Button type="button" onClick={handleDownload}>
-									Download PNG
-								</Button>
+								<Dialog>
+									<DialogTrigger asChild>
+										<Button
+											type="button"
+											disabled={!hasAnyImage}
+											className="w-full"
+										>
+											Export
+										</Button>
+									</DialogTrigger>
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle>Export preview</DialogTitle>
+											<DialogDescription>
+												Preview the generated image and download as PNG.
+											</DialogDescription>
+										</DialogHeader>
+
+										<div className="p-4">
+											{/* Visible preview: render a second CanvasRenderer with preview enabled (no ref) */}
+											<CanvasRenderer
+												rows={rows}
+												cols={cols}
+												cells={cells}
+												gap={gap}
+												fontSize={fontSize}
+												preview={true}
+												previewMaxHeight="70vh"
+												previewMaxWidth="90vw"
+												labelMode={labelMode}
+											/>
+										</div>
+
+										<DialogFooter>
+											<div className="flex gap-2">
+												<Button type="button" onClick={handleDownload}>
+													Download PNG
+												</Button>
+												<DialogClose asChild>
+													<Button variant="ghost">Close</Button>
+												</DialogClose>
+											</div>
+										</DialogFooter>
+									</DialogContent>
+								</Dialog>
 							</div>
 						</section>
 					</SidebarContent>

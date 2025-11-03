@@ -24,25 +24,42 @@ type IfdMinimal = {
 	height?: number;
 };
 
-type Props = {
-	rows: number;
-	cols: number;
+function SortableItem({
+	id,
+	index,
+	children,
+}: { id: string; index: number; children: React.ReactNode }) {
+	const { attributes, listeners, setNodeRef, transform, transition } =
+		useSortable({ id });
+	const style: React.CSSProperties = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+	};
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+			className="border border-dashed border-gray-300 p-1.5 min-h-[120px] bg-[#fafafa]"
+			onDragOver={(e) => e.preventDefault()}
+		>
+			{children}
+		</div>
+	);
+}
+
+type RenderCellProps = {
+	i: number;
 	cells: CellItem[];
 	updateCell: (index: number, item: Partial<CellItem>) => void;
-	replaceCells: (newCells: CellItem[]) => void;
 };
 
-export default function Grid({
-	rows,
-	cols,
-	cells,
-	updateCell,
-	replaceCells,
-}: Props) {
-	const N = useMemo(() => rows * cols, [rows, cols]);
+const Cell = ({ i, cells, updateCell }: RenderCellProps) => {
+	const fileInputRef = React.useRef<HTMLInputElement>(null);
+	const cell = cells[i];
 
 	const handleRemove = (index: number) => {
-		const cell = cells[index];
 		if (cell?.src?.startsWith?.("blob:")) {
 			try {
 				URL.revokeObjectURL(cell.src);
@@ -57,50 +74,6 @@ export default function Grid({
 			height: undefined,
 			label: undefined,
 		});
-	};
-
-	const onFileDrop = async (e: React.DragEvent, index: number) => {
-		e.preventDefault();
-		const files = e.dataTransfer.files;
-		if (!files || files.length === 0) return;
-		// If multiple files dropped, insert them into empty cells in order.
-		if (files.length > 1) {
-			const fileArray = Array.from(files);
-			const emptyIndices = cells
-				.map((c, i) => ({ c, i }))
-				.filter((x) => !x.c?.src)
-				.map((x) => x.i);
-			if (emptyIndices.length === 0) return;
-			const count = Math.min(fileArray.length, emptyIndices.length);
-			for (let k = 0; k < count; k++) {
-				handleFileLoad(fileArray[k], emptyIndices[k]);
-			}
-			return;
-		}
-		const file = files[0];
-		await handleFileLoad(file, index);
-	};
-
-	const onFileInput = async (
-		e: React.ChangeEvent<HTMLInputElement>,
-		index: number,
-	) => {
-		const fileList = e.target.files;
-		if (!fileList || fileList.length === 0) return;
-		const files = Array.from(fileList);
-		if (files.length > 1) {
-			const emptyIndices = cells
-				.map((c, i) => ({ c, i }))
-				.filter((x) => !x.c?.src)
-				.map((x) => x.i);
-			if (emptyIndices.length === 0) return;
-			const count = Math.min(files.length, emptyIndices.length);
-			for (let k = 0; k < count; k++) {
-				handleFileLoad(files[k], emptyIndices[k]);
-			}
-			return;
-		}
-		await handleFileLoad(files[0], index);
 	};
 
 	const handleFileLoad = async (file: File, index: number) => {
@@ -168,6 +141,131 @@ export default function Grid({
 
 	const stripExt = (name: string) => name.replace(/\.[^.]+$/, "");
 
+	const onFileDrop = async (e: React.DragEvent, index: number) => {
+		e.preventDefault();
+		const files = e.dataTransfer.files;
+		if (!files || files.length === 0) return;
+		// If multiple files dropped, insert them into empty cells in order.
+		if (files.length > 1) {
+			const fileArray = Array.from(files);
+			const emptyIndices = cells
+				.map((c, i) => ({ c, i }))
+				.filter((x) => !x.c?.src)
+				.map((x) => x.i);
+			if (emptyIndices.length === 0) return;
+			const count = Math.min(fileArray.length, emptyIndices.length);
+			for (let k = 0; k < count; k++) {
+				handleFileLoad(fileArray[k], emptyIndices[k]);
+			}
+			return;
+		}
+		const file = files[0];
+		await handleFileLoad(file, index);
+	};
+
+	const onFileInput = async (
+		e: React.ChangeEvent<HTMLInputElement>,
+		index: number,
+	) => {
+		const fileList = e.target.files;
+		if (!fileList || fileList.length === 0) return;
+		const files = Array.from(fileList);
+		if (files.length > 1) {
+			const emptyIndices = cells
+				.map((c, i) => ({ c, i }))
+				.filter((x) => !x.c?.src)
+				.map((x) => x.i);
+			if (emptyIndices.length === 0) return;
+			const count = Math.min(files.length, emptyIndices.length);
+			for (let k = 0; k < count; k++) {
+				handleFileLoad(files[k], emptyIndices[k]);
+			}
+			return;
+		}
+		await handleFileLoad(files[0], index);
+	};
+
+	return (
+		<SortableItem key={i} id={`${i}`} index={i}>
+			<div
+				className="w-full h-full flex items-center justify-center"
+				onDragOver={(e) => e.preventDefault()}
+				onDrop={(e) => onFileDrop(e, i)}
+			>
+				{cell?.src ? (
+					<div className="flex flex-col gap-2">
+						<img
+							className="w-auto h-auto max-w-full max-h-[120px] object-contain block"
+							src={cell.src}
+							alt={cell.fileName}
+							draggable={false}
+						/>
+						<Input
+							className="w-full"
+							value={cell.label ?? ""}
+							onPointerDown={(e) => e.stopPropagation()}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								updateCell(i, { label: e.target.value })
+							}
+						/>
+						<Button
+							variant="destructive"
+							size="sm"
+							className="mt-1.5"
+							onPointerDown={(e) => e.stopPropagation()}
+							onClick={() => handleRemove(i)}
+						>
+							Delete
+						</Button>
+					</div>
+				) : (
+					<div className="flex flex-col items-center gap-2">
+						<div>Drop image or</div>
+						<input
+							type="file"
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								onFileInput(e, i)
+							}
+							accept="image/*,.tif,.tiff"
+							className="hidden"
+							ref={fileInputRef}
+						/>
+						<Button
+							className="w-full"
+							variant="outline"
+							onPointerDown={(e) => {
+								// Prevent DnD-kit from intercepting the pointer and blocking the click
+								e.stopPropagation();
+								e.preventDefault();
+								fileInputRef.current?.click();
+							}}
+						>
+							Select File
+						</Button>
+					</div>
+				)}
+			</div>
+		</SortableItem>
+	);
+};
+
+type Props = {
+	rows: number;
+	cols: number;
+	cells: CellItem[];
+	updateCell: (index: number, item: Partial<CellItem>) => void;
+	replaceCells: (newCells: CellItem[]) => void;
+};
+
+export default function Grid({
+	rows,
+	cols,
+	cells,
+	updateCell,
+	replaceCells,
+}: Props) {
+	const N = rows * cols;
+
 	// DnD-kit setup for sortable grid
 	const sensors = useSensors(useSensor(PointerSensor));
 
@@ -186,103 +284,6 @@ export default function Grid({
 		replaceCells(moved);
 	};
 
-	const onDragOver = (e: React.DragEvent) => e.preventDefault();
-
-	function SortableItem({
-		id,
-		index,
-		children,
-	}: { id: string; index: number; children: React.ReactNode }) {
-		const { attributes, listeners, setNodeRef, transform, transition } =
-			useSortable({ id });
-		const style: React.CSSProperties = {
-			transform: CSS.Transform.toString(transform),
-			transition,
-		};
-		return (
-			<div
-				ref={setNodeRef}
-				style={style}
-				{...attributes}
-				{...listeners}
-				className="border border-dashed border-gray-300 p-1.5 min-h-[120px] bg-[#fafafa]"
-				onDragOver={onDragOver}
-			>
-				{children}
-			</div>
-		);
-	}
-
-	const renderCell = (i: number) => {
-		const fileInputRef = React.useRef<HTMLInputElement>(null);
-		const cell = cells[i];
-		return (
-			<SortableItem key={i} id={`${i}`} index={i}>
-				<div
-					className="w-full h-full flex items-center justify-center"
-					onDragOver={(e) => e.preventDefault()}
-					onDrop={(e) => onFileDrop(e, i)}
-				>
-					{cell?.src ? (
-						<div className="flex flex-col gap-2">
-							<img
-								className="w-auto h-auto max-w-full max-h-[120px] object-contain block"
-								src={cell.src}
-								alt={cell.fileName}
-								draggable={false}
-							/>
-							<Input
-								className="w-full"
-								value={cell.label ?? ""}
-								onPointerDown={(e) => e.stopPropagation()}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-									updateCell(i, { label: e.target.value })
-								}
-							/>
-							<Button
-								variant="destructive"
-								size="sm"
-								className="mt-1.5"
-								onPointerDown={(e) => e.stopPropagation()}
-								onClick={() => handleRemove(i)}
-							>
-								Delete
-							</Button>
-						</div>
-					) : (
-						<div className="flex flex-col items-center gap-2">
-							<div>Drop image or</div>
-							<input
-								type="file"
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-									onFileInput(e, i)
-								}
-								accept="image/*,.tif,.tiff"
-								className="hidden"
-								ref={fileInputRef}
-							/>
-							<Button
-								className="w-full"
-								variant="outline"
-								onPointerDown={(e) => {
-									// Prevent DnD-kit from intercepting the pointer and blocking the click
-									e.stopPropagation();
-									e.preventDefault();
-									fileInputRef.current?.click();
-								}}
-							>
-								Select File
-							</Button>
-						</div>
-					)}
-				</div>
-			</SortableItem>
-		);
-	};
-
-	const cellsToRender = [];
-	for (let i = 0; i < N; i++) cellsToRender.push(renderCell(i));
-
 	return (
 		<DndContext
 			sensors={sensors}
@@ -297,7 +298,14 @@ export default function Grid({
 					className="grid grid-cols-1 gap-2"
 					style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
 				>
-					{cellsToRender}
+					{Array.from({ length: N }, (_, i) => i).map((i) => (
+						<Cell
+							key={`cell-${i}`}
+							i={i}
+							cells={cells}
+							updateCell={updateCell}
+						/>
+					))}
 				</div>
 			</SortableContext>
 		</DndContext>
