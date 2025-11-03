@@ -49,7 +49,7 @@ export default function ExportDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="p-4">
+				<div className="p-4 w-full max-h-[70vh] overflow-auto flex justify-center items-center">
 					{/* Visible preview: render a second CanvasRenderer with preview enabled (no ref) */}
 					<CanvasRenderer
 						rows={rows}

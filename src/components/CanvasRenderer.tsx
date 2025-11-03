@@ -245,7 +245,7 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 		}, [renderAll]);
 
 		return (
-			<div>
+			<div className="relative h-full">
 				{/* Hidden canvas (kept for export) - still rendered but hidden when preview is off */}
 				<div style={{ display: preview ? "none" : "none" }} aria-hidden>
 					<canvas ref={canvasRef} />
@@ -254,7 +254,7 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 				{/* Preview area: visible when preview prop is true. We limit max width/height via props so
 				   tall images scale down to fit the viewport rather than causing the dialog to scroll. */}
 				<div
-					className="block mx-auto"
+					className="block mx-auto h-full"
 					style={{
 						display: preview ? "block" : "none",
 						maxWidth: preview ? previewMaxWidth || "960px" : undefined,
@@ -263,8 +263,8 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 					<canvas
 						ref={canvasRef}
 						style={{
-							width: "100%", // scale to container's width (honors maxWidth on container)
-							height: "auto",
+							width: "100%",
+							height: "100%",
 							maxWidth: previewMaxWidth || "960px",
 							maxHeight: previewMaxHeight || undefined,
 							border: "1px solid #ddd",
