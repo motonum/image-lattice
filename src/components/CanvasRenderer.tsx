@@ -254,7 +254,7 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 				{/* Preview area: visible when preview prop is true. We limit max width/height via props so
 				   tall images scale down to fit the viewport rather than causing the dialog to scroll. */}
 				<div
-					className="mt-5 block mx-auto"
+					className="block mx-auto"
 					style={{
 						display: preview ? "block" : "none",
 						maxWidth: preview ? previewMaxWidth || "960px" : undefined,
