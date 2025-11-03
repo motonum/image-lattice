@@ -23,7 +23,6 @@ import {
 	Sidebar,
 	SidebarContent,
 	SidebarHeader,
-	SidebarProvider,
 } from "@/components/ui/sidebar";
 import type { CellItem } from "@/types/cell";
 import React from "react";
@@ -71,6 +70,69 @@ export default function SettingsSidebar({
 		newValue: number;
 		removedCount: number;
 	} | null>(null);
+
+	const [rowsReset, setRowsReset] = React.useState(0);
+	const [colsReset, setColsReset] = React.useState(0);
+
+	// Helpers
+	const countImages = React.useCallback(
+		() => previewCells.filter((c) => !!c.src).length,
+		[previewCells],
+	);
+
+	const calcRemovedForRows = (newRows: number) => {
+		const keep = newRows * cols;
+		return previewCells.slice(keep).filter((c) => !!c.src).length;
+	};
+
+	const calcRemovedForCols = (newCols: number) => {
+		const keep = rows * newCols;
+		return previewCells.slice(keep).filter((c) => !!c.src).length;
+	};
+
+	const requestChange = (type: "rows" | "cols", value: number) => {
+		const removed =
+			type === "rows" ? calcRemovedForRows(value) : calcRemovedForCols(value);
+		if (removed > 0) {
+			setPending({ type, newValue: value, removedCount: removed });
+			setConfirmOpen(true);
+		} else {
+			if (type === "rows") setRows(value);
+			else setCols(value);
+		}
+	};
+
+	const applyPending = () => {
+		if (!pending) return;
+		if (pending.type === "rows") setRows(pending.newValue);
+		else setCols(pending.newValue);
+		setPending(null);
+		setConfirmOpen(false);
+	};
+
+	const preserveByExpandingOther = () => {
+		if (!pending) return;
+		const images = countImages();
+		if (pending.type === "cols") {
+			const newCols = pending.newValue;
+			let neededRows = Math.max(1, Math.ceil(images / newCols));
+			if (neededRows > 10) {
+				neededRows = 10;
+			}
+			setCols(newCols);
+			setRows(neededRows);
+		} else {
+			const newRows = pending.newValue;
+			let neededCols = Math.max(1, Math.ceil(images / newRows));
+			if (neededCols > 10) {
+				neededCols = 10;
+			}
+			setRows(newRows);
+			setCols(neededCols);
+		}
+		setPending(null);
+		setConfirmOpen(false);
+	};
 	return (
 		<Sidebar side="right" collapsible="none" className="w-80">
 			<SidebarContent>
@@ -87,22 +149,8 @@ export default function SettingsSidebar({
 							id="rows-input"
 							outerState={rows}
 							// intercept row changes to confirm if images would be removed
-							setOuterState={(n: number) => {
-								const newN = n * cols;
-								const removed = previewCells
-									.slice(newN)
-									.filter((c) => !!c.src).length;
-								if (removed > 0) {
-									setPending({
-										type: "rows",
-										newValue: n,
-										removedCount: removed,
-									});
-									setConfirmOpen(true);
-								} else {
-									setRows(n);
-								}
-							}}
+							setOuterState={(n: number) => requestChange("rows", n)}
+							resetFlag={rowsReset}
 							disabled={false}
 							className="w-16"
 							rejectNegative
@@ -118,22 +166,8 @@ export default function SettingsSidebar({
 							id="cols-input"
 							outerState={cols}
 							// intercept col changes to confirm if images would be removed
-							setOuterState={(n: number) => {
-								const newN = rows * n;
-								const removed = previewCells
-									.slice(newN)
-									.filter((c) => !!c.src).length;
-								if (removed > 0) {
-									setPending({
-										type: "cols",
-										newValue: n,
-										removedCount: removed,
-									});
-									setConfirmOpen(true);
-								} else {
-									setCols(n);
-								}
-							}}
+							setOuterState={(n: number) => requestChange("cols", n)}
+							resetFlag={colsReset}
 							disabled={false}
 							className="w-16"
 							rejectNegative
@@ -237,37 +271,36 @@ export default function SettingsSidebar({
 				>
 					<DialogContent>
 						<DialogHeader>
-							<DialogTitle>Confirm grid change</DialogTitle>
+							<DialogTitle>グリッドの変更を確認</DialogTitle>
 							<DialogDescription>
-								この変更により {pending?.removedCount ?? 0}{" "}
-								個の画像がグリッドから削除されます。よろしいですか？
+								この変更により <strong>{pending?.removedCount ?? 0}</strong>{" "}
+								個の画像が削除されます。
 							</DialogDescription>
 						</DialogHeader>
 						<DialogFooter>
 							<Button
 								variant="outline"
 								onClick={() => {
-									// cancel
-									setConfirmOpen(false);
-									setPending(null);
-								}}
-							>
-								Cancel
-							</Button>
-							<Button
-								onClick={() => {
-									if (!pending) return;
-									if (pending.type === "rows") {
-										setRows(pending.newValue);
-									} else {
-										setCols(pending.newValue);
+									// cancel — reset the corresponding NumericInput display back to outerState
+									if (pending) {
+										if (pending.type === "rows") setRowsReset((s) => s + 1);
+										else setColsReset((s) => s + 1);
 									}
 									setConfirmOpen(false);
 									setPending(null);
 								}}
 							>
-								Confirm
+								キャンセル
 							</Button>
+
+							<Button
+								variant="secondary"
+								onClick={() => preserveByExpandingOther()}
+							>
+								画像を保持
+							</Button>
+
+							<Button onClick={() => applyPending()}>削除</Button>
 						</DialogFooter>
 						<DialogClose />
 					</DialogContent>

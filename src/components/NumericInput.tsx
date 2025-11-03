@@ -10,6 +10,8 @@ type Props = {
 	rejectNegative?: boolean;
 	defaultValue?: number;
 	className?: string;
+	/** increment this prop to force the input to reset to `outerState` */
+	resetFlag?: number;
 	/** true => integer-only mode (切り捨て)、false => float mode */
 	integer?: boolean;
 	min?: number;
@@ -27,12 +29,17 @@ const NumericInput: React.FC<Props> = ({
 	integer = false,
 	min,
 	max,
+	resetFlag,
 }) => {
 	const [rawValue, setRawValue] = useState<string>(outerState.toString());
 
 	useEffect(() => {
 		setRawValue(outerState.toString());
-	}, [outerState]);
+		// reference resetFlag so linter knows it's used to trigger resets
+		// (value itself isn't needed inside effect)
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		resetFlag;
+	}, [outerState, resetFlag]);
 
 	const handleBlur = useCallback(() => {
 		const parsed = Number.parseFloat(rawValue);
@@ -106,6 +113,8 @@ const NumericInput: React.FC<Props> = ({
 				const key = e.code;
 				if (key === "Enter") {
 					e.currentTarget.blur();
+					e.preventDefault();
+					e.stopPropagation();
 				}
 
 				if (integer) {
