@@ -15,8 +15,8 @@ import {
 	SidebarHeader,
 	SidebarProvider,
 } from "@/components/ui/sidebar";
-import { Check } from "lucide-react";
 import React, { useState, useRef } from "react";
+import { toast } from "sonner";
 import CanvasRenderer, { type CanvasHandle } from "./components/CanvasRenderer";
 import Grid from "./components/Grid";
 import NumericInput from "./components/NumericInput";
@@ -83,6 +83,109 @@ export default function App() {
 
 	const replaceCells = (newCells: CellItem[]) => setCells(newCells);
 
+	const handleFileLoad = async (file: File, index: number) => {
+		const name = file.name;
+		const lower = name.toLowerCase();
+		if (
+			lower.endsWith(".tif") ||
+			lower.endsWith(".tiff") ||
+			file.type === "image/tiff"
+		) {
+			try {
+				const buffer = await file.arrayBuffer();
+				const UTIF = (await import("utif")) as unknown as {
+					decode: (b: ArrayBuffer | Uint8Array) => IfdMinimal[];
+					decodeImages: (
+						b: ArrayBuffer | Uint8Array,
+						ifds: IfdMinimal[],
+					) => void;
+					toRGBA8: (ifd: IfdMinimal) => Uint8Array;
+				};
+				const ifds = UTIF.decode(buffer);
+				UTIF.decodeImages(buffer, ifds);
+				const first = ifds[0];
+				const width = first?.width ?? 0;
+				const height = first?.height ?? 0;
+				const rgba = UTIF.toRGBA8(first);
+				const canvas = document.createElement("canvas");
+				canvas.width = width;
+				canvas.height = height;
+				const ctx = canvas.getContext("2d");
+				if (!ctx) return;
+				const imageData = new ImageData(
+					new Uint8ClampedArray(rgba),
+					width,
+					height,
+				);
+				ctx.putImageData(imageData, 0, 0);
+				const src = canvas.toDataURL();
+				updateCell(index, {
+					src,
+					fileName: name,
+					width,
+					height,
+					label: name.replace(/\.[^.]+$/, ""),
+				});
+			} catch (err) {
+				console.error("TIF load error", err);
+			}
+		} else {
+			const url = URL.createObjectURL(file);
+			const img = new Image();
+			img.src = url;
+			img.onload = () => {
+				updateCell(index, {
+					src: url,
+					fileName: name,
+					width: img.naturalWidth,
+					height: img.naturalHeight,
+					label: name.replace(/\.[^.]+$/, ""),
+				});
+			};
+		}
+	};
+
+	const handleFilesDrop = async (files: FileList) => {
+		if (!files || files.length === 0) return;
+		const fileArray = Array.from(files);
+
+		// Find empty slots
+		let emptyIndices = cells
+			.map((c, i) => ({ c, i }))
+			.filter((x) => !x.c?.src)
+			.map((x) => x.i);
+
+		// If not enough empty slots, add rows until we have capacity, but cap rows at 10
+		if (fileArray.length > emptyIndices.length) {
+			const needed = fileArray.length - emptyIndices.length;
+			const rowsToAdd = Math.ceil(needed / cols);
+			let newRows = rows + rowsToAdd;
+			if (newRows > 10) newRows = 10;
+			if (newRows > rows) {
+				const newCells = [...cells];
+				while (newCells.length < newRows * cols)
+					newCells.push({ id: `${newCells.length}` });
+				setRows(newRows);
+				replaceCells(newCells);
+				emptyIndices = newCells
+					.map((c, i) => ({ c, i }))
+					.filter((x) => !x.c?.src)
+					.map((x) => x.i);
+			}
+		}
+
+		// Insert as many files as we have empty slots; discard extras
+		const count = Math.min(fileArray.length, emptyIndices.length);
+		for (let k = 0; k < count; k++) {
+			handleFileLoad(fileArray[k], emptyIndices[k]);
+		}
+		if (count < fileArray.length) {
+			toast.warning(
+				`グリッドが最大行数（10行）に達したため、${fileArray.length - count} 個のファイルは破棄されました。`,
+			);
+		}
+	};
+
 	const indexToAlpha = (n: number) => {
 		// 0 -> a, 25 -> z, 26 -> aa
 		let i = n;
@@ -146,7 +249,14 @@ export default function App() {
 
 	return (
 		<SidebarProvider>
-			<div className="flex min-h-screen grow">
+			<div
+				className="flex min-h-screen grow"
+				onDragOver={(e: React.DragEvent<HTMLDivElement>) => e.preventDefault()}
+				onDrop={async (e: React.DragEvent<HTMLDivElement>) => {
+					e.preventDefault();
+					await handleFilesDrop(e.dataTransfer.files);
+				}}
+			>
 				<div className="mx-auto max-w-[1100px] w-full p-2">
 					<header>
 						<h1>Image Lattice</h1>
