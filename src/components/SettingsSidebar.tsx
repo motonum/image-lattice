@@ -263,31 +263,47 @@ export default function SettingsSidebar({
 				<Dialog
 					open={confirmOpen}
 					onOpenChange={(v) => {
+						// When dialog is closed (v === false) check if there's a pending
+						// change that wasn't applied; if so, treat it like a Cancel and
+						// reset the corresponding input display.
 						if (!v) {
+							if (pending) {
+								if (pending.type === "rows") setRowsReset((s) => s + 1);
+								else setColsReset((s) => s + 1);
+							}
 							setPending(null);
 						}
 						setConfirmOpen(v);
 					}}
 				>
-					<DialogContent>
+					{/* prevent closing by clicking backdrop so cancel logic (reset) runs only via Cancel) */}
+					<DialogContent
+						onPointerDownOutside={(e) => e.preventDefault()}
+						className="w-96"
+					>
 						<DialogHeader>
 							<DialogTitle>グリッドの変更を確認</DialogTitle>
 							<DialogDescription>
-								この変更により <strong>{pending?.removedCount ?? 0}</strong>{" "}
-								個の画像が削除されます。
+								セルの数が画像の数を下回るため、
+								<strong>{pending?.removedCount ?? 0}</strong>
+								個の画像が削除されます。 「画像を保持」を選択すると、
+								{pending && pending.type === "rows" ? "列" : "行"}
+								を拡張し、画像を保持します。
 							</DialogDescription>
 						</DialogHeader>
 						<DialogFooter>
 							<Button
 								variant="outline"
 								onClick={() => {
-									// cancel — reset the corresponding NumericInput display back to outerState
+									// Explicitly reset the input display for the pending change,
+									// then close the dialog. We clear `pending` so onOpenChange
+									// won't double-reset.
 									if (pending) {
 										if (pending.type === "rows") setRowsReset((s) => s + 1);
 										else setColsReset((s) => s + 1);
 									}
-									setConfirmOpen(false);
 									setPending(null);
+									setConfirmOpen(false);
 								}}
 							>
 								キャンセル
@@ -302,7 +318,6 @@ export default function SettingsSidebar({
 
 							<Button onClick={() => applyPending()}>削除</Button>
 						</DialogFooter>
-						<DialogClose />
 					</DialogContent>
 				</Dialog>
 			</SidebarContent>
