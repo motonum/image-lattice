@@ -1,4 +1,4 @@
-import { loadTiffFileToDataURL, stripExt } from "@/lib/file";
+import { loadImageFile, stripExt } from "@/lib/file";
 import type { CellItem } from "@/types/cell";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -57,37 +57,17 @@ export default function useGrid() {
 
 	const handleFileLoad = async (file: File, index: number) => {
 		const name = file.name;
-		const lower = name.toLowerCase();
-		if (
-			lower.endsWith(".tif") ||
-			lower.endsWith(".tiff") ||
-			file.type === "image/tiff"
-		) {
-			try {
-				const { src, width, height } = await loadTiffFileToDataURL(file);
-				updateCell(index, {
-					src,
-					fileName: name,
-					width,
-					height,
-					label: stripExt(name),
-				});
-			} catch (err) {
-				console.error("TIF load error", err);
-			}
-		} else {
-			const url = URL.createObjectURL(file);
-			const img = new Image();
-			img.src = url;
-			img.onload = () => {
-				updateCell(index, {
-					src: url,
-					fileName: name,
-					width: img.naturalWidth,
-					height: img.naturalHeight,
-					label: stripExt(name),
-				});
-			};
+		try {
+			const { src, width, height } = await loadImageFile(file);
+			updateCell(index, {
+				src,
+				fileName: name,
+				width,
+				height,
+				label: stripExt(name),
+			});
+		} catch (err) {
+			console.error("Image load error", err);
 		}
 	};
 

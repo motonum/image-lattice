@@ -34,3 +34,55 @@ export async function loadTiffFileToDataURL(file: File): Promise<{
 	const src = canvas.toDataURL();
 	return { src, width, height };
 }
+
+export async function loadImageFile(file: File): Promise<{
+	src: string;
+	width: number;
+	height: number;
+	isObjectUrl: boolean;
+}> {
+	const name = file.name;
+	const lower = name.toLowerCase();
+	if (
+		lower.endsWith(".tif") ||
+		lower.endsWith(".tiff") ||
+		file.type === "image/tiff"
+	) {
+		const res = await loadTiffFileToDataURL(file);
+		return { ...res, isObjectUrl: false };
+	}
+
+	const url = URL.createObjectURL(file);
+	const img = new Image();
+	img.src = url;
+	await (async () => {
+		try {
+			// prefer decode if available
+			// @ts-ignore -- decode may not be present on older browsers
+			if (img.decode) await img.decode();
+			else
+				await new Promise<void>((res) => {
+					img.onload = () => res();
+					img.onerror = () => res();
+				});
+		} catch (e) {
+			// ignore
+		}
+	})();
+	return {
+		src: url,
+		width: img.naturalWidth || 0,
+		height: img.naturalHeight || 0,
+		isObjectUrl: true,
+	};
+}
+
+export function revokeObjectUrlIfNeeded(src?: string) {
+	try {
+		if (src?.startsWith("blob:")) {
+			URL.revokeObjectURL(src);
+		}
+	} catch (e) {
+		// ignore
+	}
+}
