@@ -196,7 +196,7 @@ export default function SettingsSidebar({
 									rejectNegative
 									integer
 								/>
-								<div className="flex items-center">
+								<div className="flex items-center text-sm font-medium">
 									<div>px</div>
 								</div>
 							</div>
@@ -249,7 +249,7 @@ export default function SettingsSidebar({
 									min={0}
 									defaultValue={72}
 								/>
-								<div className="flex items-center">
+								<div className="flex items-center text-sm font-medium">
 									<div>px</div>
 								</div>
 							</div>

@@ -222,7 +222,7 @@ const Cell = ({ i, cells, updateCell, disableLabelInput }: RenderCellProps) => {
 					</div>
 				) : (
 					<div className="flex flex-col items-center gap-2">
-						<div>Drop image or</div>
+						<div className="text-sm font-medium">Drop image or</div>
 						<input
 							type="file"
 							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
