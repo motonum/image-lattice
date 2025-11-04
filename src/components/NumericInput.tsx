@@ -106,7 +106,7 @@ const NumericInput: React.FC<Props> = ({
 				}
 			}}
 			type="number"
-			step={integer ? 1 : "any"}
+			step={integer ? 1 : undefined}
 			inputMode={integer ? "numeric" : "decimal"}
 			value={rawValue}
 			onKeyDown={(e) => {
