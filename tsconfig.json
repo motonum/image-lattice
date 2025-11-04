@@ -5,7 +5,8 @@
 		"jsx": "react-jsx",
 		"moduleResolution": "node",
 		"lib": ["DOM", "ES2020"],
-		"typeRoots": ["./src/types", "./node_modules/@types"],
+		"typeRoots": ["./src/types", "./node_modules/@types", "./node_modules"],
+		"types": ["vitest/globals"],
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
@@ -18,5 +19,5 @@
 		},
 		"noEmit": true
 	},
-	"include": ["src"]
+	"include": ["src", "vitest.config.ts"]
 }
