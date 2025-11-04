@@ -1,3 +1,4 @@
+import { loadTiffFileToDataURL, stripExt } from "@/lib/file";
 import type { CellItem } from "@/types/cell";
 import {
 	DndContext,
@@ -85,35 +86,8 @@ const Cell = ({ i, cells, updateCell, disableLabelInput }: RenderCellProps) => {
 			lower.endsWith(".tiff") ||
 			file.type === "image/tiff"
 		) {
-			// use utif to decode tiff
 			try {
-				const buffer = await file.arrayBuffer();
-				const UTIF = (await import("utif")) as unknown as {
-					decode: (b: ArrayBuffer | Uint8Array) => IfdMinimal[];
-					decodeImages: (
-						b: ArrayBuffer | Uint8Array,
-						ifds: IfdMinimal[],
-					) => void;
-					toRGBA8: (ifd: IfdMinimal) => Uint8Array;
-				};
-				const ifds = UTIF.decode(buffer);
-				UTIF.decodeImages(buffer, ifds);
-				const first = (ifds as IfdMinimal[])[0];
-				const width = first?.width ?? 0;
-				const height = first?.height ?? 0;
-				const rgba = UTIF.toRGBA8(first); // Uint8Array RGBA
-				const canvas = document.createElement("canvas");
-				canvas.width = width;
-				canvas.height = height;
-				const ctx = canvas.getContext("2d");
-				if (!ctx) return;
-				const imageData = new ImageData(
-					new Uint8ClampedArray(rgba),
-					width,
-					height,
-				);
-				ctx.putImageData(imageData, 0, 0);
-				const src = canvas.toDataURL();
+				const { src, width, height } = await loadTiffFileToDataURL(file);
 				updateCell(index, {
 					src,
 					fileName: name,

@@ -1,3 +1,4 @@
+import { loadTiffFileToDataURL, stripExt } from "@/lib/file";
 import type { CellItem } from "@/types/cell";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -63,39 +64,13 @@ export default function useGrid() {
 			file.type === "image/tiff"
 		) {
 			try {
-				const buffer = await file.arrayBuffer();
-				const UTIF = (await import("utif")) as unknown as {
-					decode: (b: ArrayBuffer | Uint8Array) => IfdMinimal[];
-					decodeImages: (
-						b: ArrayBuffer | Uint8Array,
-						ifds: IfdMinimal[],
-					) => void;
-					toRGBA8: (ifd: IfdMinimal) => Uint8Array;
-				};
-				const ifds = UTIF.decode(buffer);
-				UTIF.decodeImages(buffer, ifds);
-				const first = ifds[0];
-				const width = first?.width ?? 0;
-				const height = first?.height ?? 0;
-				const rgba = UTIF.toRGBA8(first);
-				const canvas = document.createElement("canvas");
-				canvas.width = width;
-				canvas.height = height;
-				const ctx = canvas.getContext("2d");
-				if (!ctx) return;
-				const imageData = new ImageData(
-					new Uint8ClampedArray(rgba),
-					width,
-					height,
-				);
-				ctx.putImageData(imageData, 0, 0);
-				const src = canvas.toDataURL();
+				const { src, width, height } = await loadTiffFileToDataURL(file);
 				updateCell(index, {
 					src,
 					fileName: name,
 					width,
 					height,
-					label: name.replace(/\.[^.]+$/, ""),
+					label: stripExt(name),
 				});
 			} catch (err) {
 				console.error("TIF load error", err);
@@ -110,7 +85,7 @@ export default function useGrid() {
 					fileName: name,
 					width: img.naturalWidth,
 					height: img.naturalHeight,
-					label: name.replace(/\.[^.]+$/, ""),
+					label: stripExt(name),
 				});
 			};
 		}
