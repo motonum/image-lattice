@@ -246,8 +246,8 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 
 		return (
 			<div className="relative h-full">
-				{/* Hidden canvas (kept for export) - still rendered but hidden when preview is off */}
-				<div style={{ display: preview ? "none" : "none" }} aria-hidden>
+				{/* Hidden canvas (kept for export) - present when preview is false so export works even without visible preview */}
+				<div style={{ display: preview ? "none" : "block" }} aria-hidden>
 					<canvas ref={canvasRef} />
 				</div>
 
