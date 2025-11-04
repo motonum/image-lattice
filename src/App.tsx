@@ -57,7 +57,7 @@ export default function App() {
 								updateCell={updateCell}
 								replaceCells={replaceCells}
 								// label editing is driven from inside the hook/Settings UI; Grid stays dumb
-								disableLabelInput={false}
+								disableLabelInput={numberingStrategy !== "user"}
 							/>
 						</div>
 
