@@ -18,7 +18,6 @@ import { CSS } from "@dnd-kit/utilities";
 import type { CSSProperties, ReactNode } from "react";
 import Cell from "./Cell";
 
-// Minimal IFD shape we read from UTIF for our use (width/height). Keep conservative.
 type IfdMinimal = {
 	width?: number;
 	height?: number;
@@ -56,8 +55,6 @@ type RenderCellProps = {
 	disableLabelInput?: boolean;
 };
 
-/* Cell component moved to src/components/Cell.tsx */
-
 type Props = {
 	rows: number;
 	cols: number;
@@ -77,20 +74,17 @@ export default function Grid({
 }: Props) {
 	const N = rows * cols;
 
-	// DnD-kit setup for sortable grid
 	const sensors = useSensors(useSensor(PointerSensor));
 
 	const onDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!over) return;
 		const copy = [...cells];
-		// DnD-kit item ids are cell.id strings now; find their indices
 		const oldIndex = copy.findIndex((c) => c.id === String(active.id));
 		const newIndex = copy.findIndex((c) => c.id === String(over.id));
 		if (oldIndex === -1 || newIndex === -1) return;
 		if (oldIndex === newIndex) return;
 		const moved = arrayMove(copy, oldIndex, newIndex);
-		// Ensure length N
 		while (moved.length < N) moved.push({ id: `${Math.random()}` });
 		if (moved.length > N) moved.length = N;
 		replaceCells(moved);

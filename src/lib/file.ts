@@ -1,9 +1,7 @@
-// Small file utilities shared across components
 export function stripExt(name: string) {
 	return name.replace(/\.[^.]+$/, "");
 }
 
-// Load a TIFF File using `utif` and return a data URL and dimensions.
 export async function loadTiffFileToDataURL(file: File): Promise<{
 	src: string;
 	width: number;
@@ -57,17 +55,13 @@ export async function loadImageFile(file: File): Promise<{
 	img.src = url;
 	await (async () => {
 		try {
-			// prefer decode if available
-			// @ts-ignore -- decode may not be present on older browsers
 			if (img.decode) await img.decode();
 			else
 				await new Promise<void>((res) => {
 					img.onload = () => res();
 					img.onerror = () => res();
 				});
-		} catch (e) {
-			// ignore
-		}
+		} catch (e) {}
 	})();
 	return {
 		src: url,
@@ -82,7 +76,5 @@ export function revokeObjectUrlIfNeeded(src?: string) {
 		if (src?.startsWith("blob:")) {
 			URL.revokeObjectURL(src);
 		}
-	} catch (e) {
-		// ignore
-	}
+	} catch (e) {}
 }

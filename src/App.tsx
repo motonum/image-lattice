@@ -27,19 +27,12 @@ export default function App() {
 		hasAnyImage,
 	} = useGrid();
 
-	// Download is handled inside ExportDialog now.
-
 	return (
 		<div className="flex flex-col min-h-screen max-h-screen">
 			<SidebarProvider>
 				<div className="flex flex-col w-full">
 					<Header />
 					<div
-						// Use min-h-0 on the content row so children with h-full
-						// (the sidebar with `collapsible="none"`) do not inherit
-						// an extra viewport height. This keeps the sidebar height
-						// constrained to the visible content area below the header
-						// and prevents page-level vertical overflow.
 						className="flex grow min-h-0"
 						onDragOver={(e: React.DragEvent<HTMLDivElement>) =>
 							e.preventDefault()
@@ -56,7 +49,6 @@ export default function App() {
 								cells={cells}
 								updateCell={updateCell}
 								replaceCells={replaceCells}
-								// label editing is driven from inside the hook/Settings UI; Grid stays dumb
 								disableLabelInput={numberingStrategy !== "user"}
 							/>
 						</div>
