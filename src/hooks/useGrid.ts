@@ -9,41 +9,26 @@ type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 // Minimal IFD shape for TIFF decoding
 type IfdMinimal = { width?: number; height?: number };
 
-export default function useGrid() {
+export function useGridLayout() {
 	const [rows, setRows] = useState<number>(1);
 	const [cols, setCols] = useState<number>(2);
 	const [gap, setGap] = useState<number>(10);
 	const [fontSize, setFontSize] = useState<number>(72);
-	const [labelMode, setLabelMode] = useState<LabelMode>("overlay");
-	const [prevLabels, setPrevLabels] = useState<Array<
-		string | undefined
-	> | null>(null);
-	const [numberingStrategy, setNumberingStrategy] =
-		useState<NumberingStrategy>("user");
+
+	return {
+		rows,
+		setRows,
+		cols,
+		setCols,
+		gap,
+		setGap,
+		fontSize,
+		setFontSize,
+	};
+}
+
+export function useGridCells() {
 	const [cells, setCells] = useState<CellItem[]>([]);
-
-	const initGrid = useCallback((r: number, c: number) => {
-		setCells((prev) => {
-			const N = r * c;
-			const loaded = prev
-				.filter((cell) => cell?.src)
-				.map((cell) => ({ ...cell }));
-			const keep = loaded.slice(0, N);
-			const newCells: CellItem[] = [];
-			for (let i = 0; i < N; i++) {
-				if (i < keep.length) {
-					newCells.push({ ...keep[i], id: `${i}` });
-				} else {
-					newCells.push({ id: `${i}` });
-				}
-			}
-			return newCells;
-		});
-	}, []);
-
-	useEffect(() => {
-		initGrid(rows, cols);
-	}, [initGrid, rows, cols]);
 
 	const updateCell = (index: number, item: Partial<CellItem>) => {
 		setCells((prev) => {
@@ -54,6 +39,52 @@ export default function useGrid() {
 	};
 
 	const replaceCells = (newCells: CellItem[]) => setCells(newCells);
+
+	return {
+		cells,
+		setCells,
+		updateCell,
+		replaceCells,
+	};
+}
+
+export default function useGrid() {
+	const { rows, setRows, cols, setCols, gap, setGap, fontSize, setFontSize } =
+		useGridLayout();
+	const { cells, setCells, updateCell, replaceCells } = useGridCells();
+
+	const [labelMode, setLabelMode] = useState<LabelMode>("overlay");
+	const [prevLabels, setPrevLabels] = useState<Array<
+		string | undefined
+	> | null>(null);
+	const [numberingStrategy, setNumberingStrategy] =
+		useState<NumberingStrategy>("user");
+
+	const initGrid = useCallback(
+		(r: number, c: number) => {
+			setCells((prev) => {
+				const N = r * c;
+				const loaded = prev
+					.filter((cell) => cell?.src)
+					.map((cell) => ({ ...cell }));
+				const keep = loaded.slice(0, N);
+				const newCells: CellItem[] = [];
+				for (let i = 0; i < N; i++) {
+					if (i < keep.length) {
+						newCells.push({ ...keep[i], id: `${i}` });
+					} else {
+						newCells.push({ id: `${i}` });
+					}
+				}
+				return newCells;
+			});
+		},
+		[setCells],
+	);
+
+	useEffect(() => {
+		initGrid(rows, cols);
+	}, [initGrid, rows, cols]);
 
 	const handleFileLoad = async (file: File, index: number) => {
 		const name = file.name;
