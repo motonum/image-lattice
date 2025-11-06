@@ -1,9 +1,9 @@
+import Grid from "@/components/Grid";
+import Header from "@/components/Header";
 import SettingsSidebar from "@/components/SettingsSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import useGrid from "@/hooks/useGrid";
 import type React from "react";
-import Grid from "./components/Grid";
-import Header from "./components/Header";
 
 export default function App() {
 	const {
