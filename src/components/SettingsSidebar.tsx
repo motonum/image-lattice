@@ -24,7 +24,15 @@ import {
 	SidebarContent,
 	SidebarHeader,
 } from "@/components/ui/sidebar";
+import {
+	colsAtom,
+	fontSizeAtom,
+	gapAtom,
+	labelModeAtom,
+	rowsAtom,
+} from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
+import { useAtom } from "jotai";
 import React from "react";
 
 type LabelMode = "below" | "above" | "overlay";
@@ -32,16 +40,6 @@ type LabelMode = "below" | "above" | "overlay";
 type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 
 interface Props {
-	rows: number;
-	setRows: (n: number) => void;
-	cols: number;
-	setCols: (n: number) => void;
-	gap: number;
-	setGap: (n: number) => void;
-	fontSize: number;
-	setFontSize: (n: number) => void;
-	labelMode: LabelMode;
-	setLabelMode: (m: LabelMode) => void;
 	numberingStrategy: NumberingStrategy;
 	onNumberingStrategyChange: (s: NumberingStrategy) => void;
 	previewCells: CellItem[];
@@ -49,21 +47,17 @@ interface Props {
 }
 
 export default function SettingsSidebar({
-	rows,
-	setRows,
-	cols,
-	setCols,
-	gap,
-	setGap,
-	fontSize,
-	setFontSize,
-	labelMode,
-	setLabelMode,
 	numberingStrategy,
 	onNumberingStrategyChange,
 	previewCells,
 	hasAnyImage,
 }: Props) {
+	const [rows, setRows] = useAtom(rowsAtom);
+	const [cols, setCols] = useAtom(colsAtom);
+	const [gap, setGap] = useAtom(gapAtom);
+	const [fontSize, setFontSize] = useAtom(fontSizeAtom);
+	const [labelMode, setLabelMode] = useAtom(labelModeAtom);
+
 	const [confirmOpen, setConfirmOpen] = React.useState(false);
 	const [pending, setPending] = React.useState<{
 		type: "rows" | "cols";

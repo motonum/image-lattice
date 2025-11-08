@@ -1,19 +1,18 @@
 import { loadImageFile, stripExt } from "@/lib/file";
+import { colsAtom, fontSizeAtom, gapAtom, rowsAtom } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
+import { useAtom } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type LabelMode = "below" | "above" | "overlay";
 type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 
-// Minimal IFD shape for TIFF decoding
-type IfdMinimal = { width?: number; height?: number };
-
 export function useGridLayout() {
-	const [rows, setRows] = useState<number>(1);
-	const [cols, setCols] = useState<number>(2);
-	const [gap, setGap] = useState<number>(10);
-	const [fontSize, setFontSize] = useState<number>(72);
+	const [rows, setRows] = useAtom(rowsAtom);
+	const [cols, setCols] = useAtom(colsAtom);
+	const [gap, setGap] = useAtom(gapAtom);
+	const [fontSize, setFontSize] = useAtom(fontSizeAtom);
 
 	return {
 		rows,
@@ -71,9 +70,9 @@ export default function useGrid() {
 				const newCells: CellItem[] = [];
 				for (let i = 0; i < N; i++) {
 					if (i < keep.length) {
-						newCells.push({ ...keep[i], id: `${i}` });
+						newCells.push({ ...keep[i], id: crypto.randomUUID() });
 					} else {
-						newCells.push({ id: `${i}` });
+						newCells.push({ id: crypto.randomUUID() });
 					}
 				}
 				return newCells;
@@ -119,7 +118,7 @@ export default function useGrid() {
 			if (newRows > rows) {
 				const newCells = [...cells];
 				while (newCells.length < newRows * cols)
-					newCells.push({ id: `${newCells.length}` });
+					newCells.push({ id: crypto.randomUUID() });
 				setRows(newRows);
 				replaceCells(newCells);
 				emptyIndices = newCells
@@ -197,16 +196,6 @@ export default function useGrid() {
 	const hasAnyImage = cells.some((c) => !!c.src);
 
 	return {
-		rows,
-		setRows,
-		cols,
-		setCols,
-		gap,
-		setGap,
-		fontSize,
-		setFontSize,
-		labelMode,
-		setLabelMode,
 		numberingStrategy,
 		handleNumberingStrategyChange,
 		cells,

@@ -3,29 +3,22 @@ import Header from "@/components/Header";
 import SettingsSidebar from "@/components/SettingsSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import useGrid from "@/hooks/useGrid";
+import { useAtom, useAtomValue } from "jotai";
 import type React from "react";
+import { numberingStrategyAtom } from "./state/gridAtoms";
 
 export default function App() {
 	const {
-		rows,
-		setRows,
-		cols,
-		setCols,
-		gap,
-		setGap,
-		fontSize,
-		setFontSize,
-		labelMode,
-		setLabelMode,
-		numberingStrategy,
-		handleNumberingStrategyChange,
 		cells,
+		handleNumberingStrategyChange,
 		previewCells,
 		updateCell,
 		replaceCells,
 		handleFilesDrop,
 		hasAnyImage,
 	} = useGrid();
+
+	const numberingStrategy = useAtomValue(numberingStrategyAtom);
 
 	return (
 		<div className="flex flex-col min-h-screen max-h-screen">
@@ -44,8 +37,6 @@ export default function App() {
 					>
 						<div className="mx-auto max-w-[1100px] w-full p-2 overflow-scroll">
 							<Grid
-								rows={rows}
-								cols={cols}
 								cells={cells}
 								updateCell={updateCell}
 								replaceCells={replaceCells}
@@ -54,16 +45,6 @@ export default function App() {
 						</div>
 
 						<SettingsSidebar
-							rows={rows}
-							setRows={setRows}
-							cols={cols}
-							setCols={setCols}
-							gap={gap}
-							setGap={setGap}
-							fontSize={fontSize}
-							setFontSize={setFontSize}
-							labelMode={labelMode}
-							setLabelMode={setLabelMode}
 							numberingStrategy={numberingStrategy}
 							onNumberingStrategyChange={handleNumberingStrategyChange}
 							previewCells={previewCells}

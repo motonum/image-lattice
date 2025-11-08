@@ -21,10 +21,10 @@ Image Lattice は、ブラウザ上で画像を格子（グリッド）に配置
 - フロントエンド: Vite + React + TypeScript
 - ドラッグ＆ドロップ: @dnd-kit/core / @dnd-kit/sortable
 - スタイリング: Tailwind CSS
+- UIコンポーネント: shadcn/ui
 - TIFF デコード: utif
 - トースト/通知: sonner
-
-（開発時のテストランナーとして Vitest を導入する想定です。必要であればテスト設定を追加してください。）
+- テスト: Vitest
 
 ## 主要ファイル
 

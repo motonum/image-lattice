@@ -1,4 +1,5 @@
-import { loadImageFile, revokeObjectUrlIfNeeded, stripExt } from "@/lib/file";
+import Cell from "@/components/Cell";
+import { cellsAtom, colsAtom, rowsAtom } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
 import {
 	DndContext,
@@ -15,8 +16,8 @@ import {
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useAtomValue } from "jotai";
 import type { CSSProperties, ReactNode } from "react";
-import Cell from "./Cell";
 
 type IfdMinimal = {
 	width?: number;
@@ -56,8 +57,6 @@ type RenderCellProps = {
 };
 
 type Props = {
-	rows: number;
-	cols: number;
 	cells: CellItem[];
 	updateCell: (index: number, item: Partial<CellItem>) => void;
 	replaceCells: (newCells: CellItem[]) => void;
@@ -65,13 +64,13 @@ type Props = {
 };
 
 export default function Grid({
-	rows,
-	cols,
 	cells,
 	updateCell,
 	replaceCells,
 	disableLabelInput,
 }: Props) {
+	const rows = useAtomValue(rowsAtom);
+	const cols = useAtomValue(colsAtom);
 	const N = rows * cols;
 
 	const sensors = useSensors(useSensor(PointerSensor));
@@ -85,7 +84,7 @@ export default function Grid({
 		if (oldIndex === -1 || newIndex === -1) return;
 		if (oldIndex === newIndex) return;
 		const moved = arrayMove(copy, oldIndex, newIndex);
-		while (moved.length < N) moved.push({ id: `${Math.random()}` });
+		while (moved.length < N) moved.push({ id: crypto.randomUUID() });
 		if (moved.length > N) moved.length = N;
 		replaceCells(moved);
 	};
