@@ -31,13 +31,12 @@ type Address = {
 export const cellAddressAtom = atom<Address[]>((get) => {
 	const rows = get(rowsAtom);
 	const cols = get(colsAtom);
-	const addresses: Address[] = [];
-	for (let r = 0; r < rows; r++) {
-		for (let c = 0; c < cols; c++) {
+	const addresses: Address[] = Array.from({ length: rows }).flatMap((_, r) =>
+		Array.from({ length: cols }).map((_, c) => {
 			const id = crypto.randomUUID();
-			addresses.push({ id, row: r, col: c });
-		}
-	}
+			return { id, row: r, col: c };
+		}),
+	);
 	return addresses;
 });
 
