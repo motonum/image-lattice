@@ -1,4 +1,5 @@
 import { loadImageFile, stripExt } from "@/lib/file";
+import { indexToAlpha } from "@/lib/labels";
 import type { CellItem } from "@/types/cell";
 import { atom } from "jotai";
 import { toast } from "sonner";
@@ -54,18 +55,6 @@ export const cellsAtom = atom<CellItem[]>((get) => {
 export const previewCellsAtom = atom((get) => {
 	const cells = get(cellsAtom);
 	const numberingStrategy = get(numberingStrategyAtom);
-
-	const indexToAlpha = (n: number): string => {
-		const num = Math.floor(Number(n));
-		if (!Number.isFinite(num) || num < 0) return "";
-
-		const indices = (function buildIndices(i: number): number[] {
-			if (i < 0) return [];
-			return [...buildIndices(Math.floor(i / 26) - 1), i];
-		})(num);
-
-		return indices.map((ii) => String.fromCharCode((ii % 26) + 97)).join("");
-	};
 
 	if (numberingStrategy === "user") return cells;
 	const next: CellItem[] = [];
