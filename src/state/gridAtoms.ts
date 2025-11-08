@@ -55,14 +55,16 @@ export const previewCellsAtom = atom((get) => {
 	const cells = get(cellsAtom);
 	const numberingStrategy = get(numberingStrategyAtom);
 
-	const indexToAlpha = (n: number) => {
-		let i = n;
-		let s = "";
-		while (i >= 0) {
-			s = String.fromCharCode((i % 26) + 97) + s;
-			i = Math.floor(i / 26) - 1;
-		}
-		return s;
+	const indexToAlpha = (n: number): string => {
+		const num = Math.floor(Number(n));
+		if (!Number.isFinite(num) || num < 0) return "";
+
+		const indices = (function buildIndices(i: number): number[] {
+			if (i < 0) return [];
+			return [...buildIndices(Math.floor(i / 26) - 1), i];
+		})(num);
+
+		return indices.map((ii) => String.fromCharCode((ii % 26) + 97)).join("");
 	};
 
 	if (numberingStrategy === "user") return cells;
