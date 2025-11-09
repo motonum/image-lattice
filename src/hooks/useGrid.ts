@@ -6,6 +6,7 @@ import {
 	gapAtom,
 	handleFilesDropAtom,
 	numberingStrategyAtom,
+	previewCellsAtom,
 	replaceCellsAtom,
 	rowsAtom,
 	updateCellAtom,
@@ -68,16 +69,6 @@ export default function useGrid() {
 		await setHandleFilesDrop(files);
 	};
 
-	const indexToAlpha = useCallback((n: number) => {
-		let i = n;
-		let s = "";
-		while (i >= 0) {
-			s = String.fromCharCode((i % 26) + 97) + s;
-			i = Math.floor(i / 26) - 1;
-		}
-		return s;
-	}, []);
-
 	const handleNumberingStrategyChange = (newStrategy: NumberingStrategy) => {
 		if (newStrategy === numberingStrategy) return;
 
@@ -95,31 +86,7 @@ export default function useGrid() {
 		setNumberingStrategy(newStrategy);
 	};
 
-	const previewCells = useMemo(() => {
-		if (numberingStrategy === "user") return cells;
-		const next: CellItem[] = [];
-		let counter = 1;
-		for (let i = 0; i < cells.length; i++) {
-			const cell = cells[i];
-			if (cell?.src) {
-				let label: string | undefined = "";
-				if (numberingStrategy === "numeric") {
-					label = `(${counter})`;
-				} else if (numberingStrategy === "alpha") {
-					label = `(${indexToAlpha(counter - 1)})`;
-				} else if (numberingStrategy === "upper-alpha") {
-					label = `(${indexToAlpha(counter - 1).toUpperCase()})`;
-				} else if (numberingStrategy === "none") {
-					label = undefined;
-				}
-				counter++;
-				next.push({ ...cell, label });
-			} else {
-				next.push({ ...cell });
-			}
-		}
-		return next;
-	}, [cells, numberingStrategy, indexToAlpha]);
+	const previewCells = useAtomValue(previewCellsAtom);
 
 	const hasAnyImage = cells.some((c) => !!c.src);
 
