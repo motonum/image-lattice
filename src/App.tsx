@@ -18,8 +18,6 @@ export default function App() {
 		hasAnyImage,
 	} = useGrid();
 
-	const numberingStrategy = useAtomValue(numberingStrategyAtom);
-
 	return (
 		<div className="flex flex-col min-h-screen max-h-screen">
 			<SidebarProvider>
@@ -40,12 +38,10 @@ export default function App() {
 								cells={cells}
 								updateCell={updateCell}
 								replaceCells={replaceCells}
-								disableLabelInput={numberingStrategy !== "user"}
 							/>
 						</div>
 
 						<SettingsSidebar
-							numberingStrategy={numberingStrategy}
 							onNumberingStrategyChange={handleNumberingStrategyChange}
 							previewCells={previewCells}
 							hasAnyImage={hasAnyImage}

@@ -1,5 +1,7 @@
 import { loadImageFile, revokeObjectUrlIfNeeded, stripExt } from "@/lib/file";
+import { numberingStrategyAtom } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
+import { useAtom, useAtomValue } from "jotai";
 import React from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -8,17 +10,12 @@ type RenderCellProps = {
 	i: number;
 	cells: CellItem[];
 	updateCell: (index: number, item: Partial<CellItem>) => void;
-	disableLabelInput?: boolean;
 };
 
-export default function Cell({
-	i,
-	cells,
-	updateCell,
-	disableLabelInput,
-}: RenderCellProps) {
+export default function Cell({ i, cells, updateCell }: RenderCellProps) {
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 	const cell = cells[i];
+	const numberingStrategy = useAtomValue(numberingStrategyAtom);
 
 	const handleRemove = (index: number) => {
 		revokeObjectUrlIfNeeded(cell?.src);
@@ -112,7 +109,7 @@ export default function Cell({
 						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 							updateCell(i, { label: e.target.value })
 						}
-						disabled={disableLabelInput}
+						disabled={numberingStrategy !== "user"}
 					/>
 					<Button
 						variant="destructive"

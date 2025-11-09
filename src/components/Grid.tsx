@@ -1,5 +1,5 @@
 import Cell from "@/components/Cell";
-import { cellsAtom, colsAtom, rowsAtom } from "@/state/gridAtoms";
+import { colsAtom, rowsAtom } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
 import {
 	DndContext,
@@ -63,12 +63,7 @@ type Props = {
 	disableLabelInput?: boolean;
 };
 
-export default function Grid({
-	cells,
-	updateCell,
-	replaceCells,
-	disableLabelInput,
-}: Props) {
+export default function Grid({ cells, updateCell, replaceCells }: Props) {
 	const rows = useAtomValue(rowsAtom);
 	const cols = useAtomValue(colsAtom);
 	const N = rows * cols;
@@ -105,12 +100,7 @@ export default function Grid({
 				>
 					{cells.slice(0, N).map((cell, i) => (
 						<SortableItem key={cell.id} id={cell.id} index={i}>
-							<Cell
-								i={i}
-								cells={cells}
-								updateCell={updateCell}
-								disableLabelInput={disableLabelInput}
-							/>
+							<Cell i={i} cells={cells} updateCell={updateCell} />
 						</SortableItem>
 					))}
 				</div>
