@@ -2,6 +2,7 @@ import { loadImageFile, stripExt } from "@/lib/file";
 import { indexToAlpha } from "@/lib/labels";
 import type { CellItem } from "@/types/cell";
 import { atom } from "jotai";
+import { atomWithImmer } from "jotai-immer";
 import { toast } from "sonner";
 
 export type LabelMode = "below" | "above" | "overlay";
@@ -12,44 +13,93 @@ export type NumberingStrategy =
 	| "upper-alpha"
 	| "none";
 
-export const rowsAtom = atom<number>(1);
-export const colsAtom = atom<number>(2);
 export const gapAtom = atom<number>(10);
 export const fontSizeAtom = atom<number>(72);
 export const labelModeAtom = atom<LabelMode>("overlay");
 export const numberingStrategyAtom = atom<NumberingStrategy>("user");
 
-export const imagesAtom = atom<Map<string, CellItem>>(
-	new Map<string, CellItem>(),
+// Base matrix atom: rows x cols of CellItem (writable)
+const defaultRows = 1;
+const defaultCols = 2;
+const initialMatrix: CellItem[][] = Array.from({ length: defaultRows }).map(
+	(_, r) =>
+		Array.from({ length: defaultCols }).map((_, c) => ({
+			id: crypto.randomUUID(),
+		})),
+);
+export const gridMatrixAtom = atomWithImmer<CellItem[][]>(initialMatrix);
+
+// Helper: build a rows x cols matrix from a flat ordered `loaded` array.
+// Preserves item ids when present; fills remaining slots with new placeholders.
+function buildMatrixFromLoaded(
+	loaded: CellItem[],
+	rows: number,
+	cols: number,
+): CellItem[][] {
+	const matrix: CellItem[][] = [];
+	let k = 0;
+	for (let r = 0; r < rows; r++) {
+		const row: CellItem[] = [];
+		for (let c = 0; c < cols; c++) {
+			if (k < loaded.length) {
+				row.push({ ...loaded[k], id: loaded[k].id ?? crypto.randomUUID() });
+			} else {
+				row.push({ id: crypto.randomUUID() });
+			}
+			k++;
+		}
+		matrix.push(row);
+	}
+	return matrix;
+}
+
+// Derived: rows and cols are writable atoms that resize the base matrix
+export const rowsAtom = atom(
+	(get) => get(gridMatrixAtom).length,
+	(get, set, payload: { newRows: number; expand: boolean }) => {
+		const { newRows, expand } = payload;
+		const matrix = get(gridMatrixAtom);
+		const cols = matrix[0]?.length ?? 0;
+		const flat = matrix.flat();
+		const loaded = flat.filter((c) => c?.src).map((c) => ({ ...c }));
+		const newCols = expand
+			? Math.min(Math.ceil(loaded.length / newRows), 10)
+			: cols;
+		const newMatrix = buildMatrixFromLoaded(loaded, newRows, newCols);
+		set(gridMatrixAtom, newMatrix);
+	},
 );
 
-type Address = {
-	id: string;
-	row: number;
-	col: number;
-};
+export const colsAtom = atom(
+	(get) => get(gridMatrixAtom)[0]?.length ?? 0,
+	(get, set, payload: { newCols: number; expand: boolean }) => {
+		const { newCols, expand } = payload;
+		const matrix = get(gridMatrixAtom);
+		const rows = matrix.length;
+		const flat = matrix.flat();
+		const loaded = flat.filter((c) => c?.src).map((c) => ({ ...c }));
+		const newRows = expand
+			? Math.min(Math.ceil(loaded.length / newCols), 10)
+			: rows;
+		const newMatrix = buildMatrixFromLoaded(loaded, newRows, newCols);
+		set(gridMatrixAtom, newMatrix);
+	},
+);
+
+type Address = { id: string; row: number; col: number };
 
 export const cellAddressAtom = atom<Address[]>((get) => {
-	const rows = get(rowsAtom);
-	const cols = get(colsAtom);
-	const addresses: Address[] = Array.from({ length: rows }).flatMap((_, r) =>
-		Array.from({ length: cols }).map((_, c) => {
-			const id = crypto.randomUUID();
-			return { id, row: r, col: c };
-		}),
-	);
+	const matrix = get(gridMatrixAtom);
+	const addresses: Address[] = [];
+	for (let r = 0; r < matrix.length; r++) {
+		for (let c = 0; c < (matrix[r]?.length ?? 0); c++) {
+			addresses.push({ id: matrix[r][c].id, row: r, col: c });
+		}
+	}
 	return addresses;
 });
 
-export const cellsAtom = atom<CellItem[]>((get) => {
-	const cellAddresses = get(cellAddressAtom);
-	const images = get(imagesAtom);
-	return cellAddresses.map((addr) => {
-		const cell = images.get(addr.id);
-		if (cell) return cell;
-		return { id: addr.id };
-	});
-});
+export const cellsAtom = atom<CellItem[]>((get) => get(gridMatrixAtom).flat());
 
 // Derived: preview cells according to numbering strategy
 export const previewCellsAtom = atom((get) => {
@@ -89,29 +139,39 @@ export const hasAnyImageAtom = atom((get) =>
 export const updateCellAtom = atom(
 	null,
 	(get, set, payload: { index: number; item: Partial<CellItem> }) => {
-		const addresses = get(cellAddressAtom);
-		const addr = addresses[payload.index];
-		if (!addr) return;
-		const images = get(imagesAtom);
-		const copy = new Map(images);
-		const prevItem = copy.get(addr.id) ?? { id: addr.id };
-		copy.set(addr.id, { ...prevItem, ...payload.item });
-		set(imagesAtom, copy);
+		const cols = get(colsAtom);
+		const idx = payload.index;
+		const r = Math.floor(idx / cols);
+		const c = idx % cols;
+		// update via immer draft for simplicity
+		set(gridMatrixAtom, (draft) => {
+			draft[r] = draft[r] ?? [];
+			const prevItem = draft[r]?.[c] ?? { id: crypto.randomUUID() };
+			draft[r][c] = { ...prevItem, ...payload.item, id: prevItem.id };
+		});
 	},
 );
 
 export const replaceCellsAtom = atom(null, (get, set, newCells: CellItem[]) => {
-	// Map incoming array to the current cell addresses and replace imagesAtom accordingly
-	const addresses = get(cellAddressAtom);
-	const copy = new Map<string, CellItem>();
-	for (let i = 0; i < addresses.length; i++) {
-		const addr = addresses[i];
-		const cell = newCells[i];
-		if (cell?.src) {
-			copy.set(addr.id, { ...cell, id: addr.id });
+	// Map incoming flat array into the current grid matrix
+	const rows = get(rowsAtom);
+	const cols = get(colsAtom);
+	const matrix: CellItem[][] = [];
+	let k = 0;
+	for (let r = 0; r < rows; r++) {
+		const row: CellItem[] = [];
+		for (let c = 0; c < cols; c++) {
+			const cell = newCells[k];
+			if (cell?.src) {
+				row.push({ ...cell, id: cell.id ?? crypto.randomUUID() });
+			} else {
+				row.push({ id: crypto.randomUUID() });
+			}
+			k++;
 		}
+		matrix.push(row);
 	}
-	set(imagesAtom, copy);
+	set(gridMatrixAtom, matrix);
 });
 
 export const initGridAtom = atom(
@@ -125,17 +185,22 @@ export const initGridAtom = atom(
 			.filter((cell) => cell?.src)
 			.map((cell) => ({ ...cell }));
 		const keep = loaded.slice(0, N);
-		// Update grid dimensions (this will change cellAddressAtom ids)
-		set(rowsAtom, rows);
-		set(colsAtom, cols);
-		// Build new images map that maps the preserved items to the new addresses in order
-		const addresses = get(cellAddressAtom);
-		const newMap = new Map<string, CellItem>();
-		for (let i = 0; i < addresses.length; i++) {
-			if (i < keep.length)
-				newMap.set(addresses[i].id, { ...keep[i], id: addresses[i].id });
+		// Build new matrix preserving loaded items in order
+		const matrix: CellItem[][] = [];
+		let k = 0;
+		for (let r = 0; r < rows; r++) {
+			const row: CellItem[] = [];
+			for (let c = 0; c < cols; c++) {
+				if (k < keep.length) {
+					row.push({ ...keep[k], id: keep[k].id ?? crypto.randomUUID() });
+				} else {
+					row.push({ id: crypto.randomUUID() });
+				}
+				k++;
+			}
+			matrix.push(row);
 		}
-		set(imagesAtom, newMap);
+		set(gridMatrixAtom, matrix);
 	},
 );
 
@@ -146,7 +211,7 @@ export const handleFilesDropAtom = atom(
 		if (fileArray.length === 0) return;
 
 		const cols = get(colsAtom);
-		let rows = get(rowsAtom);
+		const rows = get(rowsAtom);
 
 		// current cells and empty slots
 		let cells = get(cellsAtom);
@@ -166,16 +231,22 @@ export const handleFilesDropAtom = atom(
 				const loaded = cells.filter((c) => c?.src).map((c) => ({ ...c }));
 				const N = newRows * cols;
 				const keep = loaded.slice(0, N);
-				set(rowsAtom, newRows);
-				rows = newRows;
-				// After changing rowsAtom, cellAddressAtom will produce new ids
-				const addresses = get(cellAddressAtom);
-				const newMap = new Map<string, CellItem>();
-				for (let i = 0; i < addresses.length; i++) {
-					if (i < keep.length)
-						newMap.set(addresses[i].id, { ...keep[i], id: addresses[i].id });
+				// Build new matrix from keep
+				const matrix: CellItem[][] = [];
+				let k = 0;
+				for (let r = 0; r < newRows; r++) {
+					const row: CellItem[] = [];
+					for (let c = 0; c < cols; c++) {
+						if (k < keep.length) {
+							row.push({ ...keep[k], id: keep[k].id ?? crypto.randomUUID() });
+						} else {
+							row.push({ id: crypto.randomUUID() });
+						}
+						k++;
+					}
+					matrix.push(row);
 				}
-				set(imagesAtom, newMap);
+				set(gridMatrixAtom, matrix);
 				// refresh cells and emptyIndices
 				cells = get(cellsAtom);
 				emptyIndices = cells
@@ -190,23 +261,21 @@ export const handleFilesDropAtom = atom(
 			const file = fileArray[k];
 			try {
 				const { src, width, height } = await loadImageFile(file);
-				// determine address id for this index
-				const addresses = get(cellAddressAtom);
 				const idx = emptyIndices[k];
-				const addr = addresses[idx];
-				if (!addr) continue;
-				set(imagesAtom, (prev) => {
-					const copy = new Map(prev);
-					const prevItem = copy.get(addr.id) ?? { id: addr.id };
-					copy.set(addr.id, {
+				const r = Math.floor(idx / cols);
+				const c = idx % cols;
+				// update matrix draft in-place
+				set(gridMatrixAtom, (draft) => {
+					draft[r] = draft[r] ?? [];
+					const prevItem = draft[r][c] ?? { id: crypto.randomUUID() };
+					draft[r][c] = {
 						...prevItem,
 						src,
 						fileName: file.name,
 						width,
 						height,
 						label: stripExt(file.name),
-					});
-					return copy;
+					};
 				});
 			} catch (err) {
 				console.error("Image load error", err);

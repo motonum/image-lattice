@@ -29,10 +29,11 @@ import {
 	fontSizeAtom,
 	gapAtom,
 	labelModeAtom,
+	numberingStrategyAtom,
 	rowsAtom,
 } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import React from "react";
 
 type LabelMode = "below" | "above" | "overlay";
@@ -40,14 +41,12 @@ type LabelMode = "below" | "above" | "overlay";
 type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 
 interface Props {
-	numberingStrategy: NumberingStrategy;
 	onNumberingStrategyChange: (s: NumberingStrategy) => void;
 	previewCells: CellItem[];
 	hasAnyImage: boolean;
 }
 
 export default function SettingsSidebar({
-	numberingStrategy,
 	onNumberingStrategyChange,
 	previewCells,
 	hasAnyImage,
@@ -57,6 +56,7 @@ export default function SettingsSidebar({
 	const [gap, setGap] = useAtom(gapAtom);
 	const [fontSize, setFontSize] = useAtom(fontSizeAtom);
 	const [labelMode, setLabelMode] = useAtom(labelModeAtom);
+	const numberingStrategy = useAtomValue(numberingStrategyAtom);
 
 	const [confirmOpen, setConfirmOpen] = React.useState(false);
 	const [pending, setPending] = React.useState<{
@@ -67,12 +67,6 @@ export default function SettingsSidebar({
 
 	const [rowsReset, setRowsReset] = React.useState(0);
 	const [colsReset, setColsReset] = React.useState(0);
-
-	// Helpers
-	const countImages = React.useCallback(
-		() => previewCells.filter((c) => !!c.src).length,
-		[previewCells],
-	);
 
 	const calcRemovedForRows = (newRows: number) => {
 		const keep = newRows * cols;
@@ -91,42 +85,19 @@ export default function SettingsSidebar({
 			setPending({ type, newValue: value, removedCount: removed });
 			setConfirmOpen(true);
 		} else {
-			if (type === "rows") setRows(value);
-			else setCols(value);
+			if (type === "rows") setRows({ newRows: value, expand: false });
+			else setCols({ newCols: value, expand: false });
 		}
 	};
 
-	const applyPending = () => {
+	const applyPendingWithExpand = (expand: boolean) => {
 		if (!pending) return;
-		if (pending.type === "rows") setRows(pending.newValue);
-		else setCols(pending.newValue);
+		if (pending.type === "rows") setRows({ newRows: pending.newValue, expand });
+		else setCols({ newCols: pending.newValue, expand });
 		setPending(null);
 		setConfirmOpen(false);
 	};
 
-	const preserveByExpandingOther = () => {
-		if (!pending) return;
-		const images = countImages();
-		if (pending.type === "cols") {
-			const newCols = pending.newValue;
-			let neededRows = Math.max(1, Math.ceil(images / newCols));
-			if (neededRows > 10) {
-				neededRows = 10;
-			}
-			setCols(newCols);
-			setRows(neededRows);
-		} else {
-			const newRows = pending.newValue;
-			let neededCols = Math.max(1, Math.ceil(images / newRows));
-			if (neededCols > 10) {
-				neededCols = 10;
-			}
-			setRows(newRows);
-			setCols(neededCols);
-		}
-		setPending(null);
-		setConfirmOpen(false);
-	};
 	return (
 		<Sidebar side="right" collapsible="none" className="w-72 flex-none p-4">
 			<SidebarContent>
@@ -338,12 +309,14 @@ export default function SettingsSidebar({
 
 							<Button
 								variant="secondary"
-								onClick={() => preserveByExpandingOther()}
+								onClick={() => applyPendingWithExpand(true)}
 							>
 								画像を保持
 							</Button>
 
-							<Button onClick={() => applyPending()}>削除</Button>
+							<Button onClick={() => applyPendingWithExpand(false)}>
+								削除
+							</Button>
 						</DialogFooter>
 					</DialogContent>
 				</Dialog>
