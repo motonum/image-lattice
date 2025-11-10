@@ -1,4 +1,4 @@
-import CanvasRenderer, { type CanvasHandle } from "@/components/CanvasRenderer";
+import CanvasRenderer from "@/components/CanvasRenderer";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -18,6 +18,7 @@ import {
 	previewCellsAtom,
 	rowsAtom,
 } from "@/state/gridAtoms";
+import type { CanvasHandle } from "@/types/canvas";
 import { useAtomValue } from "jotai";
 import React, { useRef } from "react";
 
