@@ -1,9 +1,14 @@
-import { loadImageFile, stripExt } from "@/lib/file";
+import { loadImageFile, revokeObjectUrlIfNeeded, stripExt } from "@/lib/file";
 import { indexToAlpha } from "@/lib/labels";
+import { DEFAULT_COLS, DEFAULT_ROWS, MAX_ROWS } from "@/state/gridConstants";
+import { buildMatrixFromLoaded, newPlaceholder } from "@/state/gridHelpers";
 import type { CellItem } from "@/types/cell";
 import { atom } from "jotai";
 import { atomWithImmer } from "jotai-immer";
+import { atomFamily } from "jotai/utils";
 import { toast } from "sonner";
+
+// Config
 
 export type LabelMode = "below" | "above" | "overlay";
 export type NumberingStrategy =
@@ -19,51 +24,63 @@ export const labelModeAtom = atom<LabelMode>("overlay");
 export const numberingStrategyAtom = atom<NumberingStrategy>("user");
 
 // Base matrix atom: rows x cols of CellItem (writable)
-const defaultRows = 1;
-const defaultCols = 2;
-const initialMatrix: CellItem[][] = Array.from({ length: defaultRows }).map(
-	(_, r) =>
-		Array.from({ length: defaultCols }).map((_, c) => ({
-			id: crypto.randomUUID(),
-		})),
+const initialMatrix: CellItem[][] = Array.from({ length: DEFAULT_ROWS }).map(
+	() => Array.from({ length: DEFAULT_COLS }).map(() => newPlaceholder()),
 );
-export const gridMatrixAtom = atomWithImmer<CellItem[][]>(initialMatrix);
 
-// Helper: build a rows x cols matrix from a flat ordered `loaded` array.
-// Preserves item ids when present; fills remaining slots with new placeholders.
-function buildMatrixFromLoaded(
-	loaded: CellItem[],
-	rows: number,
-	cols: number,
-): CellItem[][] {
-	const matrix: CellItem[][] = [];
-	let k = 0;
-	for (let r = 0; r < rows; r++) {
-		const row: CellItem[] = [];
-		for (let c = 0; c < cols; c++) {
-			if (k < loaded.length) {
-				row.push({ ...loaded[k], id: loaded[k].id ?? crypto.randomUUID() });
-			} else {
-				row.push({ id: crypto.randomUUID() });
-			}
-			k++;
-		}
-		matrix.push(row);
-	}
-	return matrix;
-}
+const gridMatrixAtom = atomWithImmer<CellItem[][]>(initialMatrix);
+
+export const cellAddressFamilyAtom = atomFamily((id: string) =>
+	atom((get) => {
+		const matrix = get(gridMatrixAtom);
+		return matrix.reduce(
+			(acc, currRow, r) => {
+				if (acc.row !== -1) return acc;
+				const col = currRow.findIndex((c) => c.id === id);
+				const row = col !== -1 ? r : -1;
+				return { row, col };
+			},
+			{ row: -1, col: -1 },
+		);
+	}),
+);
+
+export const cellFamilyAtom = atomFamily((id: string) =>
+	atom(
+		(get) => {
+			const matrix = get(gridMatrixAtom);
+			const cell = matrix.flat().find((c) => c.id === id);
+			return cell;
+		},
+		(get, set, item: Partial<CellItem>) => {
+			const { row, col } = get(cellAddressFamilyAtom(id));
+			set(gridMatrixAtom, (draft) => {
+				if (row === -1 || col === -1) return;
+				draft[row][col] = { ...draft[row][col], ...item, id };
+			});
+		},
+	),
+);
+
+export const loadedCellsAtom = atom<CellItem[]>((get) => {
+	const matrix = get(gridMatrixAtom);
+	return matrix
+		.flat()
+		.filter((c) => c?.src)
+		.map((c) => ({ ...c }));
+});
+
+// Helper functions are moved to `src/state/gridHelpers.ts` and constants to `src/state/gridConstants.ts`.
 
 // Derived: rows and cols are writable atoms that resize the base matrix
 export const rowsAtom = atom(
 	(get) => get(gridMatrixAtom).length,
 	(get, set, payload: { newRows: number; expand: boolean }) => {
 		const { newRows, expand } = payload;
-		const matrix = get(gridMatrixAtom);
-		const cols = matrix[0]?.length ?? 0;
-		const flat = matrix.flat();
-		const loaded = flat.filter((c) => c?.src).map((c) => ({ ...c }));
+		const cols = get(colsAtom);
+		const loaded = get(loadedCellsAtom);
 		const newCols = expand
-			? Math.min(Math.ceil(loaded.length / newRows), 10)
+			? Math.min(Math.ceil(loaded.length / newRows), MAX_ROWS)
 			: cols;
 		const newMatrix = buildMatrixFromLoaded(loaded, newRows, newCols);
 		set(gridMatrixAtom, newMatrix);
@@ -74,12 +91,10 @@ export const colsAtom = atom(
 	(get) => get(gridMatrixAtom)[0]?.length ?? 0,
 	(get, set, payload: { newCols: number; expand: boolean }) => {
 		const { newCols, expand } = payload;
-		const matrix = get(gridMatrixAtom);
-		const rows = matrix.length;
-		const flat = matrix.flat();
-		const loaded = flat.filter((c) => c?.src).map((c) => ({ ...c }));
+		const rows = get(rowsAtom);
+		const loaded = get(loadedCellsAtom);
 		const newRows = expand
-			? Math.min(Math.ceil(loaded.length / newCols), 10)
+			? Math.min(Math.ceil(loaded.length / newCols), MAX_ROWS)
 			: rows;
 		const newMatrix = buildMatrixFromLoaded(loaded, newRows, newCols);
 		set(gridMatrixAtom, newMatrix);
@@ -140,67 +155,112 @@ export const updateCellAtom = atom(
 	null,
 	(get, set, payload: { index: number; item: Partial<CellItem> }) => {
 		const cols = get(colsAtom);
-		const idx = payload.index;
-		const r = Math.floor(idx / cols);
-		const c = idx % cols;
+		const index = payload.index;
+		const r = Math.floor(index / cols);
+		const c = index % cols;
 		// update via immer draft for simplicity
 		set(gridMatrixAtom, (draft) => {
-			draft[r] = draft[r] ?? [];
-			const prevItem = draft[r]?.[c] ?? { id: crypto.randomUUID() };
+			const prevItem = draft[r]?.[c] ?? newPlaceholder();
 			draft[r][c] = { ...prevItem, ...payload.item, id: prevItem.id };
 		});
 	},
 );
 
 export const replaceCellsAtom = atom(null, (get, set, newCells: CellItem[]) => {
-	// Map incoming flat array into the current grid matrix
+	// Map incoming flat array into the current grid matrix using helper
 	const rows = get(rowsAtom);
 	const cols = get(colsAtom);
-	const matrix: CellItem[][] = [];
-	let k = 0;
-	for (let r = 0; r < rows; r++) {
-		const row: CellItem[] = [];
-		for (let c = 0; c < cols; c++) {
-			const cell = newCells[k];
-			if (cell?.src) {
-				row.push({ ...cell, id: cell.id ?? crypto.randomUUID() });
-			} else {
-				row.push({ id: crypto.randomUUID() });
-			}
-			k++;
-		}
-		matrix.push(row);
-	}
+	const matrix = buildMatrixFromLoaded(newCells, rows, cols);
 	set(gridMatrixAtom, matrix);
 });
 
-export const initGridAtom = atom(
+export const clearCellAtom = atom(null, (get, set, index: number) => {
+	const cols = get(colsAtom);
+	const r = Math.floor(index / cols);
+	const c = index % cols;
+	// update via immer draft for simplicity
+	// revoke object url if present
+	const matrix = get(gridMatrixAtom);
+	const prev = matrix[r]?.[c];
+	if (prev?.src) revokeObjectUrlIfNeeded(prev.src);
+	set(gridMatrixAtom, (draft) => {
+		draft[r] = draft[r] ?? [];
+		draft[r][c] = newPlaceholder();
+	});
+});
+
+// Insert one or more files starting at the given cell index. If multiple files
+// are provided, they will fill available empty slots (by order). This centralizes
+// the file-loading logic used by UI components.
+export const insertFilesAtIndexAtom = atom(
 	null,
-	(get, set, payload: { rows: number; cols: number }) => {
-		const { rows, cols } = payload;
-		// Capture current loaded cells (before changing addresses)
-		const prevCells = get(cellsAtom);
-		const N = rows * cols;
-		const loaded = prevCells
-			.filter((cell) => cell?.src)
-			.map((cell) => ({ ...cell }));
-		const keep = loaded.slice(0, N);
-		// Build new matrix preserving loaded items in order
-		const matrix: CellItem[][] = [];
-		let k = 0;
-		for (let r = 0; r < rows; r++) {
-			const row: CellItem[] = [];
-			for (let c = 0; c < cols; c++) {
-				if (k < keep.length) {
-					row.push({ ...keep[k], id: keep[k].id ?? crypto.randomUUID() });
-				} else {
-					row.push({ id: crypto.randomUUID() });
-				}
-				k++;
+	async (get, set, payload: { files: FileList | File[]; index: number }) => {
+		const fileArray = Array.from(payload.files as File[]);
+		if (fileArray.length === 0) return;
+
+		const cols = get(colsAtom);
+		const rows = get(rowsAtom);
+
+		// current cells and empty slots
+		const cells = get(cellsAtom);
+		const emptyIndices = cells
+			.map((c, i) => ({ c, i }))
+			.filter((x) => !x.c?.src)
+			.map((x) => x.i);
+
+		// If single file, insert at the provided index directly
+		if (fileArray.length === 1) {
+			const file = fileArray[0];
+			try {
+				const { src, width, height } = await loadImageFile(file);
+				const idx = payload.index;
+				const r = Math.floor(idx / cols);
+				const c = idx % cols;
+				set(gridMatrixAtom, (draft) => {
+					draft[r] = draft[r] ?? [];
+					const prevItem = draft[r][c] ?? newPlaceholder();
+					draft[r][c] = {
+						...prevItem,
+						src,
+						fileName: file.name,
+						width,
+						height,
+						label: stripExt(file.name),
+					};
+				});
+			} catch (err) {
+				console.error("Image load error", err);
 			}
-			matrix.push(row);
+			return;
 		}
-		set(gridMatrixAtom, matrix);
+
+		// Multiple files: fill empty slots in order (no expansion here - the
+		// global drop handler is responsible for expansion behavior).
+		if (emptyIndices.length === 0) return;
+		const count = Math.min(fileArray.length, emptyIndices.length);
+		for (let k = 0; k < count; k++) {
+			const file = fileArray[k];
+			try {
+				const { src, width, height } = await loadImageFile(file);
+				const idx = emptyIndices[k];
+				const r = Math.floor(idx / cols);
+				const c = idx % cols;
+				set(gridMatrixAtom, (draft) => {
+					draft[r] = draft[r] ?? [];
+					const prevItem = draft[r][c] ?? newPlaceholder();
+					draft[r][c] = {
+						...prevItem,
+						src,
+						fileName: file.name,
+						width,
+						height,
+						label: stripExt(file.name),
+					};
+				});
+			} catch (err) {
+				console.error("Image load error", err);
+			}
+		}
 	},
 );
 
@@ -225,27 +285,14 @@ export const handleFilesDropAtom = atom(
 			const needed = fileArray.length - emptyIndices.length;
 			const rowsToAdd = Math.ceil(needed / cols);
 			let newRows = rows + rowsToAdd;
-			if (newRows > 10) newRows = 10;
+			if (newRows > MAX_ROWS) newRows = MAX_ROWS;
 			if (newRows > rows) {
 				// preserve existing loaded images in order, then set new rows
 				const loaded = cells.filter((c) => c?.src).map((c) => ({ ...c }));
 				const N = newRows * cols;
 				const keep = loaded.slice(0, N);
-				// Build new matrix from keep
-				const matrix: CellItem[][] = [];
-				let k = 0;
-				for (let r = 0; r < newRows; r++) {
-					const row: CellItem[] = [];
-					for (let c = 0; c < cols; c++) {
-						if (k < keep.length) {
-							row.push({ ...keep[k], id: keep[k].id ?? crypto.randomUUID() });
-						} else {
-							row.push({ id: crypto.randomUUID() });
-						}
-						k++;
-					}
-					matrix.push(row);
-				}
+				// Build new matrix from keep using helper
+				const matrix = buildMatrixFromLoaded(keep, newRows, cols);
 				set(gridMatrixAtom, matrix);
 				// refresh cells and emptyIndices
 				cells = get(cellsAtom);
@@ -267,7 +314,7 @@ export const handleFilesDropAtom = atom(
 				// update matrix draft in-place
 				set(gridMatrixAtom, (draft) => {
 					draft[r] = draft[r] ?? [];
-					const prevItem = draft[r][c] ?? { id: crypto.randomUUID() };
+					const prevItem = draft[r][c] ?? newPlaceholder();
 					draft[r][c] = {
 						...prevItem,
 						src,
