@@ -4,6 +4,7 @@ import { revokeObjectUrlIfNeeded } from "@/lib/file";
 import {
 	cellFamilyAtom,
 	clearCellAtom,
+	handleFilesDropAtom,
 	insertFilesAtIndexAtom,
 	numberingStrategyAtom,
 	updateCellAtom,
@@ -23,6 +24,7 @@ export default function Cell({ i, id }: RenderCellProps) {
 	const updateCell = useSetAtom(updateCellAtom);
 	const clearCell = useSetAtom(clearCellAtom);
 	const insertFiles = useSetAtom(insertFilesAtIndexAtom);
+	const handleFilesDrop = useSetAtom(handleFilesDropAtom);
 
 	const handleRemove = useCallback(
 		(index: number) => {
@@ -34,21 +36,23 @@ export default function Cell({ i, id }: RenderCellProps) {
 
 	const onFileDrop = useCallback(
 		async (e: React.DragEvent, index: number) => {
-			e.preventDefault();
 			const files = e.dataTransfer.files;
 			if (!files || files.length === 0) return;
-			insertFiles({ files, index });
+			if (files.length === 1) insertFiles({ files, index });
+			else handleFilesDrop(files);
 		},
-		[insertFiles],
+		[insertFiles, handleFilesDrop],
 	);
 
 	const onFileInput = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
 			const fileList = e.target.files;
 			if (!fileList || fileList.length === 0) return;
-			insertFiles({ files: Array.from(fileList), index });
+			if (fileList.length === 1)
+				insertFiles({ files: Array.from(fileList), index });
+			else handleFilesDrop(fileList);
 		},
-		[insertFiles],
+		[insertFiles, handleFilesDrop],
 	);
 
 	return (
@@ -57,6 +61,7 @@ export default function Cell({ i, id }: RenderCellProps) {
 			onDragOver={(e) => e.preventDefault()}
 			onDrop={(e) => {
 				e.stopPropagation();
+				e.preventDefault();
 				onFileDrop(e, i);
 			}}
 		>
