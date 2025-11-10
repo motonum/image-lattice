@@ -1,6 +1,10 @@
 import Cell from "@/components/Cell";
-import { colsAtom, rowsAtom } from "@/state/gridAtoms";
-import type { CellItem } from "@/types/cell";
+import {
+	cellsAtom,
+	colsAtom,
+	replaceCellsAtom,
+	rowsAtom,
+} from "@/state/gridAtoms";
 import {
 	DndContext,
 	PointerSensor,
@@ -16,14 +20,10 @@ import {
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import type { CSSProperties, ReactNode } from "react";
 
-function SortableItem({
-	id,
-	index,
-	children,
-}: { id: string; index: number; children: ReactNode }) {
+function SortableItem({ id, children }: { id: string; children: ReactNode }) {
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id });
 	const style: CSSProperties = {
@@ -44,24 +44,13 @@ function SortableItem({
 	);
 }
 
-type RenderCellProps = {
-	i: number;
-	cells: CellItem[];
-	updateCell: (index: number, item: Partial<CellItem>) => void;
-	disableLabelInput?: boolean;
-};
-
-type Props = {
-	cells: CellItem[];
-	updateCell: (index: number, item: Partial<CellItem>) => void;
-	replaceCells: (newCells: CellItem[]) => void;
-	disableLabelInput?: boolean;
-};
-
-export default function Grid({ cells, updateCell, replaceCells }: Props) {
+export default function Grid() {
 	const rows = useAtomValue(rowsAtom);
 	const cols = useAtomValue(colsAtom);
 	const N = rows * cols;
+
+	const cells = useAtomValue(cellsAtom);
+	const replaceCells = useSetAtom(replaceCellsAtom);
 
 	const sensors = useSensors(useSensor(PointerSensor));
 
@@ -94,7 +83,7 @@ export default function Grid({ cells, updateCell, replaceCells }: Props) {
 					style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
 				>
 					{cells.slice(0, N).map((cell, i) => (
-						<SortableItem key={cell.id} id={cell.id} index={i}>
+						<SortableItem key={cell.id} id={cell.id}>
 							<Cell i={i} id={cell.id} />
 						</SortableItem>
 					))}

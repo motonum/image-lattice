@@ -2,12 +2,12 @@ import Grid from "@/components/Grid";
 import Header from "@/components/Header";
 import SettingsSidebar from "@/components/SettingsSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import useGrid from "@/hooks/useGrid";
+import { handleFilesDropAtom } from "@/state/gridAtoms";
+import { useSetAtom } from "jotai";
 import type React from "react";
 
 export default function App() {
-	const { cells, updateCell, replaceCells, handleFilesDrop, hasAnyImage } =
-		useGrid();
+	const handleFilesDrop = useSetAtom(handleFilesDropAtom);
 
 	return (
 		<div className="flex flex-col min-h-screen max-h-screen">
@@ -25,11 +25,7 @@ export default function App() {
 						}}
 					>
 						<div className="mx-auto max-w-[1100px] w-full p-2 overflow-scroll">
-							<Grid
-								cells={cells}
-								updateCell={updateCell}
-								replaceCells={replaceCells}
-							/>
+							<Grid />
 						</div>
 
 						<SettingsSidebar />
