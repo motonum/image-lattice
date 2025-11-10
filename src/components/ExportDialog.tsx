@@ -22,11 +22,6 @@ import { useAtomValue } from "jotai";
 import React, { useRef } from "react";
 
 export default function ExportDialog() {
-	const rows = useAtomValue(rowsAtom);
-	const cols = useAtomValue(colsAtom);
-	const gap = useAtomValue(gapAtom);
-	const fontSize = useAtomValue(fontSizeAtom);
-	const labelMode = useAtomValue(labelModeAtom);
 	const previewCells = useAtomValue(previewCellsAtom);
 	const hasAnyImage = previewCells.some((c) => !!c.src);
 	const exportRef = useRef<CanvasHandle | null>(null);
@@ -62,30 +57,15 @@ export default function ExportDialog() {
 				<div className="p-4 w-full max-h-[70vh] overflow-auto flex justify-center items-center">
 					{/* Visible preview: render a second CanvasRenderer with preview enabled (no ref) */}
 					<CanvasRenderer
-						rows={rows}
-						cols={cols}
-						cells={previewCells}
-						gap={gap}
-						fontSize={fontSize}
 						preview={true}
 						previewMaxHeight="70vh"
 						previewMaxWidth="90vw"
-						labelMode={labelMode}
 					/>
 				</div>
 
 				{/* Offscreen renderer used for export */}
 				<div style={{ display: "none" }} aria-hidden>
-					<CanvasRenderer
-						ref={exportRef}
-						rows={rows}
-						cols={cols}
-						cells={previewCells}
-						gap={gap}
-						fontSize={fontSize}
-						preview={false}
-						labelMode={labelMode}
-					/>
+					<CanvasRenderer ref={exportRef} preview={false} />
 				</div>
 
 				<DialogFooter>
