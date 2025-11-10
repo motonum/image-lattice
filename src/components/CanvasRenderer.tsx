@@ -27,6 +27,27 @@ type Props = {
 	previewMaxWidth?: string;
 };
 
+// Additional type definitions
+export type Dimensions = {
+	colWidths: number[];
+	rowHeights: number[];
+};
+
+export type LabelMode = "above" | "below" | "overlay";
+
+export type DrawLabelsAndImagesParams = {
+	ctx: CanvasRenderingContext2D;
+	images: (HTMLImageElement | null)[];
+	rows: number;
+	cols: number;
+	colWidths: number[];
+	rowHeights: number[];
+	cells: CellItem[];
+	gap: number;
+	fontSize: number;
+	labelMode: LabelMode;
+};
+
 const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 	({ preview = false, previewMaxHeight, previewMaxWidth }, ref) => {
 		const rows = useAtomValue(rowsAtom);
