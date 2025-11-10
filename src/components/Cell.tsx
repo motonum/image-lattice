@@ -1,98 +1,64 @@
-import { loadImageFile, revokeObjectUrlIfNeeded, stripExt } from "@/lib/file";
-import { numberingStrategyAtom } from "@/state/gridAtoms";
-import type { CellItem } from "@/types/cell";
-import { useAtom, useAtomValue } from "jotai";
-import React from "react";
+import { revokeObjectUrlIfNeeded } from "@/lib/file";
+import {
+	cellFamilyAtom,
+	clearCellAtom,
+	insertFilesAtIndexAtom,
+	numberingStrategyAtom,
+	updateCellAtom,
+} from "@/state/gridAtoms";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import React, { useCallback } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
 type RenderCellProps = {
 	i: number;
-	cells: CellItem[];
-	updateCell: (index: number, item: Partial<CellItem>) => void;
+	id: string;
 };
 
-export default function Cell({ i, cells, updateCell }: RenderCellProps) {
+export default function Cell({ i, id }: RenderCellProps) {
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
-	const cell = cells[i];
+	const [cell, setCell] = useAtom(cellFamilyAtom(id));
 	const numberingStrategy = useAtomValue(numberingStrategyAtom);
+	const updateCell = useSetAtom(updateCellAtom);
+	const clearCell = useSetAtom(clearCellAtom);
+	const insertFiles = useSetAtom(insertFilesAtIndexAtom);
 
-	const handleRemove = (index: number) => {
-		revokeObjectUrlIfNeeded(cell?.src);
-		updateCell(index, {
-			src: undefined,
-			fileName: undefined,
-			width: undefined,
-			height: undefined,
-			label: undefined,
-		});
-	};
+	const handleRemove = useCallback(
+		(index: number) => {
+			revokeObjectUrlIfNeeded(cell?.src);
+			clearCell(index);
+		},
+		[cell?.src, clearCell],
+	);
 
-	const handleFileLoad = async (file: File, index: number) => {
-		const name = file.name;
-		try {
-			const { src, width, height } = await loadImageFile(file);
-			updateCell(index, {
-				src,
-				fileName: name,
-				width,
-				height,
-				label: stripExt(name),
-			});
-		} catch (err) {
-			console.error("Image load error", err);
-		}
-	};
+	const onFileDrop = useCallback(
+		async (e: React.DragEvent, index: number) => {
+			e.preventDefault();
+			const files = e.dataTransfer.files;
+			if (!files || files.length === 0) return;
+			insertFiles({ files, index });
+		},
+		[insertFiles],
+	);
 
-	const onFileDrop = async (e: React.DragEvent, index: number) => {
-		e.preventDefault();
-		const files = e.dataTransfer.files;
-		if (!files || files.length === 0) return;
-		// If multiple files dropped, insert them into empty cells in order.
-		if (files.length > 1) {
-			const fileArray = Array.from(files);
-			const emptyIndices = cells
-				.map((c, i) => ({ c, i }))
-				.filter((x) => !x.c?.src)
-				.map((x) => x.i);
-			if (emptyIndices.length === 0) return;
-			const count = Math.min(fileArray.length, emptyIndices.length);
-			for (let k = 0; k < count; k++) {
-				handleFileLoad(fileArray[k], emptyIndices[k]);
-			}
-			return;
-		}
-		const file = files[0];
-		await handleFileLoad(file, index);
-	};
-
-	const onFileInput = async (
-		e: React.ChangeEvent<HTMLInputElement>,
-		index: number,
-	) => {
-		const fileList = e.target.files;
-		if (!fileList || fileList.length === 0) return;
-		const files = Array.from(fileList);
-		if (files.length > 1) {
-			const emptyIndices = cells
-				.map((c, i) => ({ c, i }))
-				.filter((x) => !x.c?.src)
-				.map((x) => x.i);
-			if (emptyIndices.length === 0) return;
-			const count = Math.min(files.length, emptyIndices.length);
-			for (let k = 0; k < count; k++) {
-				handleFileLoad(files[k], emptyIndices[k]);
-			}
-			return;
-		}
-		await handleFileLoad(files[0], index);
-	};
+	const onFileInput = useCallback(
+		async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+			const fileList = e.target.files;
+			if (!fileList || fileList.length === 0) return;
+			insertFiles({ files: Array.from(fileList), index });
+		},
+		[insertFiles],
+	);
 
 	return (
 		<div
 			className="w-full h-full flex items-center justify-center"
 			onDragOver={(e) => e.preventDefault()}
-			onDrop={(e) => onFileDrop(e, i)}
+			onDrop={(e) => {
+				e.stopPropagation();
+				onFileDrop(e, i);
+			}}
 		>
 			{cell?.src ? (
 				<div className="flex flex-col gap-2">
@@ -107,7 +73,7 @@ export default function Cell({ i, cells, updateCell }: RenderCellProps) {
 						value={cell.label ?? ""}
 						onPointerDown={(e) => e.stopPropagation()}
 						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-							updateCell(i, { label: e.target.value })
+							updateCell({ index: i, item: { label: e.target.value } })
 						}
 						disabled={numberingStrategy !== "user"}
 					/>
@@ -132,12 +98,12 @@ export default function Cell({ i, cells, updateCell }: RenderCellProps) {
 						accept="image/*,.tif,.tiff"
 						className="hidden"
 						ref={fileInputRef}
+						multiple
 					/>
 					<Button
 						className="w-full"
 						variant="outline"
 						onPointerDown={(e) => {
-							// Prevent DnD-kit from intercepting the pointer and blocking the click
 							e.stopPropagation();
 							e.preventDefault();
 							fileInputRef.current?.click();

@@ -100,7 +100,7 @@ export default function Grid({ cells, updateCell, replaceCells }: Props) {
 				>
 					{cells.slice(0, N).map((cell, i) => (
 						<SortableItem key={cell.id} id={cell.id} index={i}>
-							<Cell i={i} cells={cells} updateCell={updateCell} />
+							<Cell i={i} id={cell.id} />
 						</SortableItem>
 					))}
 				</div>

@@ -1,43 +1,167 @@
+import * as fileLib from "@/lib/file";
+import {
+	type NumberingStrategy,
+	numberingStrategyAtom,
+	replaceCellsAtom,
+} from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Provider, type WritableAtom, createStore, useSetAtom } from "jotai";
 import React from "react";
+import { vi } from "vitest";
 import Cell from "../Cell";
 
+vi.mock("@/lib/file", () => ({
+	loadImageFile: vi.fn(),
+	revokeObjectUrlIfNeeded: vi.fn(),
+	stripExt: (s: string) => s.replace(/\.[^.]+$/, ""),
+}));
 const DATA_URL =
 	"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==";
 
 describe("Cell", () => {
-	test("画像、ラベル入力、削除ボタンが表示されること", () => {
-		const mockUpdate = vi.fn();
-		const cells: CellItem[] = [
-			{
-				id: "0",
-				src: DATA_URL,
-				fileName: "a.png",
-				label: "a",
-				width: 1,
-				height: 1,
-			},
-		];
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
 
-		render(<Cell i={0} cells={cells} updateCell={mockUpdate} />);
+	test("画像、ラベル入力、削除ボタンが表示されること", async () => {
+		const store = createStore();
 
-		const img = screen.getByAltText("a.png");
-		expect(img).toBeTruthy();
+		const Initializer: React.FC = () => {
+			const set = useSetAtom(
+				replaceCellsAtom as WritableAtom<null, [CellItem[]], void>,
+			);
+			React.useEffect(() => {
+				const items: CellItem[] = [
+					{
+						id: "0",
+						src: DATA_URL,
+						fileName: "a.png",
+						label: "a",
+						width: 1,
+						height: 1,
+					},
+					{ id: "placeholder-1" },
+				];
+				set(items);
+			}, [set]);
+			return null;
+		};
 
-		const input = screen.getByDisplayValue("a");
-		expect(input).toBeTruthy();
+		// set numbering strategy to user so label input is editable
+		store.set(numberingStrategyAtom, "user" as NumberingStrategy);
 
-		const del = screen.getByText("Delete");
-		expect(del).toBeTruthy();
+		render(
+			<Provider store={store}>
+				<Initializer />
+				<Cell i={0} id="0" />
+			</Provider>,
+		);
 
-		fireEvent.click(del);
-		expect(mockUpdate).toHaveBeenCalledWith(0, {
-			src: undefined,
-			fileName: undefined,
-			width: undefined,
-			height: undefined,
-			label: undefined,
+		await waitFor(() =>
+			expect(screen.getByAltText("a.png")).toBeInTheDocument(),
+		);
+		expect(screen.getByDisplayValue("a")).toBeInTheDocument();
+		expect(screen.getByText("Delete")).toBeInTheDocument();
+	});
+
+	test("Delete ボタンを押すとセルがクリアされること", async () => {
+		const store = createStore();
+
+		const Initializer: React.FC = () => {
+			const set = useSetAtom(
+				replaceCellsAtom as WritableAtom<null, [CellItem[]], void>,
+			);
+			React.useEffect(() => {
+				const items: CellItem[] = [
+					{
+						id: "0",
+						src: DATA_URL,
+						fileName: "a.png",
+						label: "a",
+						width: 1,
+						height: 1,
+					},
+					{ id: "placeholder-2" },
+				];
+				set(items);
+			}, [set]);
+			return null;
+		};
+
+		store.set(numberingStrategyAtom, "user" as NumberingStrategy);
+
+		render(
+			<Provider store={store}>
+				<Initializer />
+				<Cell i={0} id="0" />
+			</Provider>,
+		);
+
+		await waitFor(() =>
+			expect(screen.getByAltText("a.png")).toBeInTheDocument(),
+		);
+		fireEvent.click(screen.getByText("Delete"));
+
+		await waitFor(() => {
+			expect(screen.queryByAltText("a.png")).toBeNull();
+			expect(screen.getByText("Select File")).toBeInTheDocument();
 		});
+	});
+
+	test("セルが外部から更新されると表示が変わること (ファイル入力の代替)", async () => {
+		const store = createStore();
+
+		// Initial empty grid
+		const InitializerA: React.FC = () => {
+			const set = useSetAtom(
+				replaceCellsAtom as WritableAtom<null, [CellItem[]], void>,
+			);
+			React.useEffect(() => {
+				const items: CellItem[] = [
+					{ id: "placeholder-3" },
+					{ id: "placeholder-4" },
+				];
+				set(items);
+			}, [set]);
+			return null;
+		};
+
+		// After mount, replace with a loaded image to simulate file load/update
+		const InitializerB: React.FC = () => {
+			const set = useSetAtom(
+				replaceCellsAtom as WritableAtom<null, [CellItem[]], void>,
+			);
+			React.useEffect(() => {
+				const items: CellItem[] = [
+					{
+						id: "0",
+						src: DATA_URL,
+						fileName: "b.png",
+						label: "b",
+						width: 1,
+						height: 1,
+					},
+					{ id: "placeholder-5" },
+				];
+				set(items);
+			}, [set]);
+			return null;
+		};
+
+		store.set(numberingStrategyAtom, "user" as NumberingStrategy);
+
+		render(
+			<Provider store={store}>
+				<InitializerA />
+				<InitializerB />
+				<Cell i={0} id="0" />
+			</Provider>,
+		);
+
+		await waitFor(() =>
+			expect(screen.getByAltText("b.png")).toBeInTheDocument(),
+		);
+		expect(screen.getByDisplayValue("b")).toBeInTheDocument();
 	});
 });

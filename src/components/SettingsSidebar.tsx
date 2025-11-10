@@ -30,9 +30,9 @@ import {
 	gapAtom,
 	labelModeAtom,
 	numberingStrategyAtom,
+	previewCellsAtom,
 	rowsAtom,
 } from "@/state/gridAtoms";
-import type { CellItem } from "@/types/cell";
 import { useAtom, useAtomValue } from "jotai";
 import React from "react";
 
@@ -40,23 +40,16 @@ type LabelMode = "below" | "above" | "overlay";
 
 type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 
-interface Props {
-	onNumberingStrategyChange: (s: NumberingStrategy) => void;
-	previewCells: CellItem[];
-	hasAnyImage: boolean;
-}
-
-export default function SettingsSidebar({
-	onNumberingStrategyChange,
-	previewCells,
-	hasAnyImage,
-}: Props) {
+export default function SettingsSidebar() {
 	const [rows, setRows] = useAtom(rowsAtom);
 	const [cols, setCols] = useAtom(colsAtom);
 	const [gap, setGap] = useAtom(gapAtom);
 	const [fontSize, setFontSize] = useAtom(fontSizeAtom);
 	const [labelMode, setLabelMode] = useAtom(labelModeAtom);
-	const numberingStrategy = useAtomValue(numberingStrategyAtom);
+	const [numberingStrategy, setNumberingStrategy] = useAtom(
+		numberingStrategyAtom,
+	);
+	const previewCells = useAtomValue(previewCellsAtom);
 
 	const [confirmOpen, setConfirmOpen] = React.useState(false);
 	const [pending, setPending] = React.useState<{
@@ -118,7 +111,6 @@ export default function SettingsSidebar({
 								<NumericInput
 									id="rows-input"
 									outerState={rows}
-									// intercept row changes to confirm if images would be removed
 									setOuterState={(n: number) => requestChange("rows", n)}
 									resetFlag={rowsReset}
 									disabled={false}
@@ -184,7 +176,7 @@ export default function SettingsSidebar({
 								<Select
 									value={numberingStrategy}
 									onValueChange={(e) =>
-										onNumberingStrategyChange(e as NumberingStrategy)
+										setNumberingStrategy(e as NumberingStrategy)
 									}
 								>
 									<SelectTrigger id="label-type-select" className="w-36">
@@ -246,24 +238,12 @@ export default function SettingsSidebar({
 
 					{/* Export flow: open sheet to preview and download */}
 					<div className="flex gap-2">
-						<ExportDialog
-							rows={rows}
-							cols={cols}
-							previewCells={previewCells}
-							gap={gap}
-							fontSize={fontSize}
-							labelMode={labelMode}
-							hasAnyImage={hasAnyImage}
-						/>
+						<ExportDialog />
 					</div>
 				</section>
-				{/* Confirmation dialog when reducing grid would remove images */}
 				<Dialog
 					open={confirmOpen}
 					onOpenChange={(v) => {
-						// When dialog is closed (v === false) check if there's a pending
-						// change that wasn't applied; if so, treat it like a Cancel and
-						// reset the corresponding input display.
 						if (!v) {
 							if (pending) {
 								if (pending.type === "rows") setRowsReset((s) => s + 1);
@@ -274,7 +254,6 @@ export default function SettingsSidebar({
 						setConfirmOpen(v);
 					}}
 				>
-					{/* prevent closing by clicking backdrop so cancel logic (reset) runs only via Cancel) */}
 					<DialogContent
 						onPointerDownOutside={(e) => e.preventDefault()}
 						className="w-96"
@@ -293,9 +272,6 @@ export default function SettingsSidebar({
 							<Button
 								variant="outline"
 								onClick={() => {
-									// Explicitly reset the input display for the pending change,
-									// then close the dialog. We clear `pending` so onOpenChange
-									// won't double-reset.
 									if (pending) {
 										if (pending.type === "rows") setRowsReset((s) => s + 1);
 										else setColsReset((s) => s + 1);
