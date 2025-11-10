@@ -1,9 +1,5 @@
-// Vitest / Testing Library setup file
-// - Adds jest-dom matchers
-// - Provides small DOM polyfills (e.g. matchMedia) used by some components
 import "@testing-library/jest-dom";
 
-// Minimal matchMedia polyfill for JSDOM-based tests
 if (typeof window !== "undefined" && !window.matchMedia) {
 	Object.defineProperty(window, "matchMedia", {
 		writable: true,
@@ -20,8 +16,6 @@ if (typeof window !== "undefined" && !window.matchMedia) {
 	});
 }
 
-// Optional: stub window.scrollTo to avoid errors in some components
 if (typeof window !== "undefined" && !window.scrollTo) {
-	// @ts-ignore
 	window.scrollTo = () => {};
 }

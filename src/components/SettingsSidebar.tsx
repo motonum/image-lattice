@@ -3,7 +3,6 @@ import NumericInput from "@/components/NumericInput";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
-	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,

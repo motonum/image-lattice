@@ -70,9 +70,6 @@ export const loadedCellsAtom = atom<CellItem[]>((get) => {
 		.map((c) => ({ ...c }));
 });
 
-// Helper functions are moved to `src/state/gridHelpers.ts` and constants to `src/state/gridConstants.ts`.
-
-// Derived: rows and cols are writable atoms that resize the base matrix
 export const rowsAtom = atom(
 	(get) => get(gridMatrixAtom).length,
 	(get, set, payload: { newRows: number; expand: boolean }) => {
@@ -116,7 +113,6 @@ export const cellAddressAtom = atom<Address[]>((get) => {
 
 export const cellsAtom = atom<CellItem[]>((get) => get(gridMatrixAtom).flat());
 
-// Derived: preview cells according to numbering strategy
 export const previewCellsAtom = atom((get) => {
 	const cells = get(cellsAtom);
 	const numberingStrategy = get(numberingStrategyAtom);
@@ -158,7 +154,6 @@ export const updateCellAtom = atom(
 		const index = payload.index;
 		const r = Math.floor(index / cols);
 		const c = index % cols;
-		// update via immer draft for simplicity
 		set(gridMatrixAtom, (draft) => {
 			const prevItem = draft[r]?.[c] ?? newPlaceholder();
 			draft[r][c] = { ...prevItem, ...payload.item, id: prevItem.id };
@@ -167,7 +162,6 @@ export const updateCellAtom = atom(
 );
 
 export const replaceCellsAtom = atom(null, (get, set, newCells: CellItem[]) => {
-	// Map incoming flat array into the current grid matrix using helper
 	const rows = get(rowsAtom);
 	const cols = get(colsAtom);
 	const matrix = buildMatrixFromLoaded(newCells, rows, cols);
@@ -178,8 +172,6 @@ export const clearCellAtom = atom(null, (get, set, index: number) => {
 	const cols = get(colsAtom);
 	const r = Math.floor(index / cols);
 	const c = index % cols;
-	// update via immer draft for simplicity
-	// revoke object url if present
 	const matrix = get(gridMatrixAtom);
 	const prev = matrix[r]?.[c];
 	if (prev?.src) revokeObjectUrlIfNeeded(prev.src);
@@ -189,9 +181,6 @@ export const clearCellAtom = atom(null, (get, set, index: number) => {
 	});
 });
 
-// Insert one or more files starting at the given cell index. If multiple files
-// are provided, they will fill available empty slots (by order). This centralizes
-// the file-loading logic used by UI components.
 export const insertFilesAtIndexAtom = atom(
 	null,
 	async (get, set, payload: { files: FileList | File[]; index: number }) => {
@@ -201,14 +190,12 @@ export const insertFilesAtIndexAtom = atom(
 		const cols = get(colsAtom);
 		const rows = get(rowsAtom);
 
-		// current cells and empty slots
 		const cells = get(cellsAtom);
 		const emptyIndices = cells
 			.map((c, i) => ({ c, i }))
 			.filter((x) => !x.c?.src)
 			.map((x) => x.i);
 
-		// If single file, insert at the provided index directly
 		if (fileArray.length === 1) {
 			const file = fileArray[0];
 			try {
@@ -234,8 +221,6 @@ export const insertFilesAtIndexAtom = atom(
 			return;
 		}
 
-		// Multiple files: fill empty slots in order (no expansion here - the
-		// global drop handler is responsible for expansion behavior).
 		if (emptyIndices.length === 0) return;
 		const count = Math.min(fileArray.length, emptyIndices.length);
 		for (let k = 0; k < count; k++) {
@@ -273,28 +258,23 @@ export const handleFilesDropAtom = atom(
 		const cols = get(colsAtom);
 		const rows = get(rowsAtom);
 
-		// current cells and empty slots
 		let cells = get(cellsAtom);
 		let emptyIndices = cells
 			.map((c, i) => ({ c, i }))
 			.filter((x) => !x.c?.src)
 			.map((x) => x.i);
 
-		// If not enough empty slots, try to expand rows (max 10)
 		if (fileArray.length > emptyIndices.length) {
 			const needed = fileArray.length - emptyIndices.length;
 			const rowsToAdd = Math.ceil(needed / cols);
 			let newRows = rows + rowsToAdd;
 			if (newRows > MAX_ROWS) newRows = MAX_ROWS;
 			if (newRows > rows) {
-				// preserve existing loaded images in order, then set new rows
 				const loaded = cells.filter((c) => c?.src).map((c) => ({ ...c }));
 				const N = newRows * cols;
 				const keep = loaded.slice(0, N);
-				// Build new matrix from keep using helper
 				const matrix = buildMatrixFromLoaded(keep, newRows, cols);
 				set(gridMatrixAtom, matrix);
-				// refresh cells and emptyIndices
 				cells = get(cellsAtom);
 				emptyIndices = cells
 					.map((c, i) => ({ c, i }))
@@ -311,7 +291,6 @@ export const handleFilesDropAtom = atom(
 				const idx = emptyIndices[k];
 				const r = Math.floor(idx / cols);
 				const c = idx % cols;
-				// update matrix draft in-place
 				set(gridMatrixAtom, (draft) => {
 					draft[r] = draft[r] ?? [];
 					const prevItem = draft[r][c] ?? newPlaceholder();

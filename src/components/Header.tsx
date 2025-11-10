@@ -1,6 +1,4 @@
-import { HelpCircle } from "lucide-react";
-import React from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -8,7 +6,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "./ui/dialog";
+} from "@/components/ui/dialog";
+import { HelpCircle } from "lucide-react";
+import React from "react";
 
 export default function Header() {
 	return (
@@ -16,7 +16,6 @@ export default function Header() {
 			<div className="w-full px-4 py-3 flex items-center justify-between">
 				<h1 className="text-lg font-semibold">Image Lattice</h1>
 
-				{/* Help button on the right */}
 				<Dialog>
 					<DialogTrigger asChild>
 						<Button variant="ghost" size="sm" aria-label="Help">

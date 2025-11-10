@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { revokeObjectUrlIfNeeded } from "@/lib/file";
 import {
 	cellFamilyAtom,
@@ -8,8 +10,6 @@ import {
 } from "@/state/gridAtoms";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 
 type RenderCellProps = {
 	i: number;

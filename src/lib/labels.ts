@@ -3,7 +3,6 @@ export function indexToAlpha(n: number): string {
 	if (!Number.isFinite(num) || num < 0) return "";
 
 	const chars: string[] = [];
-	// iterative approach: push least-significant char, then reverse
 	for (let i = num; i >= 0; i = Math.floor(i / 26) - 1) {
 		chars.push(String.fromCharCode((i % 26) + 97));
 	}

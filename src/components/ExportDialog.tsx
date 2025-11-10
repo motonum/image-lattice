@@ -1,3 +1,4 @@
+import CanvasRenderer, { type CanvasHandle } from "@/components/CanvasRenderer";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -17,9 +18,8 @@ import {
 	previewCellsAtom,
 	rowsAtom,
 } from "@/state/gridAtoms";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import React, { useRef } from "react";
-import CanvasRenderer, { type CanvasHandle } from "./CanvasRenderer";
 
 export default function ExportDialog() {
 	const rows = useAtomValue(rowsAtom);

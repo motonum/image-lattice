@@ -1,4 +1,3 @@
-import { loadImageFile, stripExt } from "@/lib/file";
 import {
 	type NumberingStrategy,
 	cellsAtom,

@@ -19,11 +19,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { useAtomValue } from "jotai";
 import type { CSSProperties, ReactNode } from "react";
 
-type IfdMinimal = {
-	width?: number;
-	height?: number;
-};
-
 function SortableItem({
 	id,
 	index,
