@@ -50,7 +50,6 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 			exportPNG: async () => {
 				const canvasBefore = canvasRef.current;
 				if (!canvasBefore) return new Blob();
-				// ensure latest render completed
 				await renderAll();
 				return await new Promise<Blob>((resolve) =>
 					canvasRef.current?.toBlob(
@@ -65,7 +64,6 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 			const canvas = canvasRef.current;
 			if (!canvas) return;
 
-			// Load all images first so we can measure natural sizes reliably
 			const images: Array<HTMLImageElement | null> = new Array(
 				rows * cols,
 			).fill(null);
@@ -77,16 +75,13 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 					img.src = cell.src;
 					const p = (async () => {
 						try {
-							// @ts-ignore
 							if (img.decode) await img.decode();
 							else
 								await new Promise<void>((res) => {
 									img.onload = () => res();
 									img.onerror = () => res();
 								});
-						} catch (e) {
-							// ignore
-						}
+						} catch (e) {}
 					})();
 					images[i] = img;
 					loadPromises.push(p);
@@ -94,7 +89,6 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 			}
 			await Promise.all(loadPromises);
 
-			// Compute column widths and row heights from loaded images (fallback to 0)
 			const colWidths: number[] = new Array(cols).fill(0);
 			const rowHeights: number[] = new Array(rows).fill(0);
 			for (let r = 0; r < rows; r++) {
@@ -108,7 +102,6 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 				}
 			}
 
-			// Measure label widths and expand column widths if label is wider than image
 			if (labelMode !== "overlay") {
 				const measureCanvas = document.createElement("canvas");
 				const measureCtx = measureCanvas.getContext("2d");
@@ -130,18 +123,14 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 
 			const totalWidth =
 				colWidths.reduce((a, b) => a + b, 0) + gap * Math.max(0, cols - 1);
-			// Reserve vertical space for labels. Use a smaller reserve for 'above' so label sits close to image.
 			let labelReserve: number;
 			if (labelMode === "overlay") {
 				labelReserve = 0;
 			} else if (labelMode === "above") {
-				// keep label just above image with small padding
 				labelReserve = Math.ceil(fontSize) + 6;
 			} else {
-				// 'below' - allow extra space for descenders
 				labelReserve = Math.ceil(fontSize * 1.4) + 8;
 			}
-			// reserve label space per row (above/below); overlay requires no extra row reserve
 			const totalHeight =
 				rowHeights.reduce((a, b) => a + b, 0) +
 				gap * Math.max(0, rows - 1) +
@@ -152,10 +141,8 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 
 			const ctx = canvas.getContext("2d");
 			if (!ctx) return;
-			// Do not fill with white — keep canvas background transparent so exported PNG has alpha
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			// Draw images now that we have measurements
 			let y = 0;
 			for (let r = 0; r < rows; r++) {
 				let x = 0;
@@ -168,18 +155,15 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 					if (img) {
 						try {
 							if (labelMode === "above") {
-								// draw label first at top of cell
 								if (cell?.label) {
 									ctx.fillStyle = "#000";
 									ctx.font = `${fontSize}px sans-serif`;
 									ctx.textBaseline = "top";
-									// place label just above the image (small padding)
 									const labelX = x + 2;
 									const labelY = y + Math.max(2, labelReserve - fontSize - 2);
 									ctx.fillText(cell.label, labelX, labelY);
 									ctx.textBaseline = "alphabetic";
 								}
-								// then draw image below reserved label area
 								ctx.drawImage(
 									img,
 									x,
@@ -188,7 +172,6 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 									img.naturalHeight || h,
 								);
 							} else {
-								// 'below' or 'overlay'
 								ctx.drawImage(
 									img,
 									x,
@@ -206,7 +189,6 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 										ctx.fillText(cell.label, x + 2, labelY);
 										ctx.textBaseline = "alphabetic";
 									} else if (labelMode === "overlay") {
-										// draw white background rectangle then text on top-left of image
 										ctx.font = `${fontSize}px sans-serif`;
 										ctx.textBaseline = "top";
 										const metrics = ctx.measureText(cell.label || "");
@@ -216,22 +198,17 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 										const rectY = y + 4;
 										const rectW = textW + padding * 2;
 										const rectH = fontSize + padding * 2;
-										// draw background
 										ctx.fillStyle = "#fff";
 										ctx.fillRect(rectX, rectY, rectW, rectH);
-										// draw text inside with padding
 										ctx.fillStyle = "#000";
 										const textX = rectX + padding;
 										const textY = rectY + padding;
 										ctx.fillText(cell.label || "", textX, textY);
-										// reset baseline
 										ctx.textBaseline = "alphabetic";
 									}
 								}
 							}
-						} catch (e) {
-							// ignore draw errors per-image
-						}
+						} catch (e) {}
 					}
 					x += w + gap;
 				}
@@ -239,20 +216,16 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 			}
 		}, [rows, cols, cells, gap, fontSize, labelMode]);
 
-		// Draw when props change
 		useEffect(() => {
 			renderAll();
 		}, [renderAll]);
 
 		return (
 			<div className="relative h-full">
-				{/* Hidden canvas (kept for export) - present when preview is false so export works even without visible preview */}
 				<div style={{ display: preview ? "none" : "block" }} aria-hidden>
 					<canvas ref={canvasRef} />
 				</div>
 
-				{/* Preview area: visible when preview prop is true. We limit max width/height via props so
-				   tall images scale down to fit the viewport rather than causing the dialog to scroll. */}
 				<div
 					className="block mx-auto h-full"
 					style={{

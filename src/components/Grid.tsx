@@ -1,5 +1,10 @@
-import { loadImageFile, revokeObjectUrlIfNeeded, stripExt } from "@/lib/file";
-import type { CellItem } from "@/types/cell";
+import Cell from "@/components/Cell";
+import {
+	cellsAtom,
+	colsAtom,
+	replaceCellsAtom,
+	rowsAtom,
+} from "@/state/gridAtoms";
 import {
 	DndContext,
 	PointerSensor,
@@ -15,20 +20,10 @@ import {
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useAtomValue, useSetAtom } from "jotai";
 import type { CSSProperties, ReactNode } from "react";
-import Cell from "./Cell";
 
-// Minimal IFD shape we read from UTIF for our use (width/height). Keep conservative.
-type IfdMinimal = {
-	width?: number;
-	height?: number;
-};
-
-function SortableItem({
-	id,
-	index,
-	children,
-}: { id: string; index: number; children: ReactNode }) {
+function SortableItem({ id, children }: { id: string; children: ReactNode }) {
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id });
 	const style: CSSProperties = {
@@ -49,49 +44,26 @@ function SortableItem({
 	);
 }
 
-type RenderCellProps = {
-	i: number;
-	cells: CellItem[];
-	updateCell: (index: number, item: Partial<CellItem>) => void;
-	disableLabelInput?: boolean;
-};
-
-/* Cell component moved to src/components/Cell.tsx */
-
-type Props = {
-	rows: number;
-	cols: number;
-	cells: CellItem[];
-	updateCell: (index: number, item: Partial<CellItem>) => void;
-	replaceCells: (newCells: CellItem[]) => void;
-	disableLabelInput?: boolean;
-};
-
-export default function Grid({
-	rows,
-	cols,
-	cells,
-	updateCell,
-	replaceCells,
-	disableLabelInput,
-}: Props) {
+export default function Grid() {
+	const rows = useAtomValue(rowsAtom);
+	const cols = useAtomValue(colsAtom);
 	const N = rows * cols;
 
-	// DnD-kit setup for sortable grid
+	const cells = useAtomValue(cellsAtom);
+	const replaceCells = useSetAtom(replaceCellsAtom);
+
 	const sensors = useSensors(useSensor(PointerSensor));
 
 	const onDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!over) return;
 		const copy = [...cells];
-		// DnD-kit item ids are cell.id strings now; find their indices
 		const oldIndex = copy.findIndex((c) => c.id === String(active.id));
 		const newIndex = copy.findIndex((c) => c.id === String(over.id));
 		if (oldIndex === -1 || newIndex === -1) return;
 		if (oldIndex === newIndex) return;
 		const moved = arrayMove(copy, oldIndex, newIndex);
-		// Ensure length N
-		while (moved.length < N) moved.push({ id: `${Math.random()}` });
+		while (moved.length < N) moved.push({ id: crypto.randomUUID() });
 		if (moved.length > N) moved.length = N;
 		replaceCells(moved);
 	};
@@ -111,13 +83,8 @@ export default function Grid({
 					style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
 				>
 					{cells.slice(0, N).map((cell, i) => (
-						<SortableItem key={cell.id} id={cell.id} index={i}>
-							<Cell
-								i={i}
-								cells={cells}
-								updateCell={updateCell}
-								disableLabelInput={disableLabelInput}
-							/>
+						<SortableItem key={cell.id} id={cell.id}>
+							<Cell i={i} id={cell.id} />
 						</SortableItem>
 					))}
 				</div>

@@ -3,7 +3,6 @@ import NumericInput from "@/components/NumericInput";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
-	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -24,46 +23,33 @@ import {
 	SidebarContent,
 	SidebarHeader,
 } from "@/components/ui/sidebar";
-import type { CellItem } from "@/types/cell";
+import {
+	colsAtom,
+	fontSizeAtom,
+	gapAtom,
+	labelModeAtom,
+	numberingStrategyAtom,
+	previewCellsAtom,
+	rowsAtom,
+} from "@/state/gridAtoms";
+import { useAtom, useAtomValue } from "jotai";
 import React from "react";
 
 type LabelMode = "below" | "above" | "overlay";
 
 type NumberingStrategy = "user" | "numeric" | "alpha" | "upper-alpha" | "none";
 
-interface Props {
-	rows: number;
-	setRows: (n: number) => void;
-	cols: number;
-	setCols: (n: number) => void;
-	gap: number;
-	setGap: (n: number) => void;
-	fontSize: number;
-	setFontSize: (n: number) => void;
-	labelMode: LabelMode;
-	setLabelMode: (m: LabelMode) => void;
-	numberingStrategy: NumberingStrategy;
-	onNumberingStrategyChange: (s: NumberingStrategy) => void;
-	previewCells: CellItem[];
-	hasAnyImage: boolean;
-}
+export default function SettingsSidebar() {
+	const [rows, setRows] = useAtom(rowsAtom);
+	const [cols, setCols] = useAtom(colsAtom);
+	const [gap, setGap] = useAtom(gapAtom);
+	const [fontSize, setFontSize] = useAtom(fontSizeAtom);
+	const [labelMode, setLabelMode] = useAtom(labelModeAtom);
+	const [numberingStrategy, setNumberingStrategy] = useAtom(
+		numberingStrategyAtom,
+	);
+	const previewCells = useAtomValue(previewCellsAtom);
 
-export default function SettingsSidebar({
-	rows,
-	setRows,
-	cols,
-	setCols,
-	gap,
-	setGap,
-	fontSize,
-	setFontSize,
-	labelMode,
-	setLabelMode,
-	numberingStrategy,
-	onNumberingStrategyChange,
-	previewCells,
-	hasAnyImage,
-}: Props) {
 	const [confirmOpen, setConfirmOpen] = React.useState(false);
 	const [pending, setPending] = React.useState<{
 		type: "rows" | "cols";
@@ -73,12 +59,6 @@ export default function SettingsSidebar({
 
 	const [rowsReset, setRowsReset] = React.useState(0);
 	const [colsReset, setColsReset] = React.useState(0);
-
-	// Helpers
-	const countImages = React.useCallback(
-		() => previewCells.filter((c) => !!c.src).length,
-		[previewCells],
-	);
 
 	const calcRemovedForRows = (newRows: number) => {
 		const keep = newRows * cols;
@@ -97,42 +77,19 @@ export default function SettingsSidebar({
 			setPending({ type, newValue: value, removedCount: removed });
 			setConfirmOpen(true);
 		} else {
-			if (type === "rows") setRows(value);
-			else setCols(value);
+			if (type === "rows") setRows({ newRows: value, expand: false });
+			else setCols({ newCols: value, expand: false });
 		}
 	};
 
-	const applyPending = () => {
+	const applyPendingWithExpand = (expand: boolean) => {
 		if (!pending) return;
-		if (pending.type === "rows") setRows(pending.newValue);
-		else setCols(pending.newValue);
+		if (pending.type === "rows") setRows({ newRows: pending.newValue, expand });
+		else setCols({ newCols: pending.newValue, expand });
 		setPending(null);
 		setConfirmOpen(false);
 	};
 
-	const preserveByExpandingOther = () => {
-		if (!pending) return;
-		const images = countImages();
-		if (pending.type === "cols") {
-			const newCols = pending.newValue;
-			let neededRows = Math.max(1, Math.ceil(images / newCols));
-			if (neededRows > 10) {
-				neededRows = 10;
-			}
-			setCols(newCols);
-			setRows(neededRows);
-		} else {
-			const newRows = pending.newValue;
-			let neededCols = Math.max(1, Math.ceil(images / newRows));
-			if (neededCols > 10) {
-				neededCols = 10;
-			}
-			setRows(newRows);
-			setCols(neededCols);
-		}
-		setPending(null);
-		setConfirmOpen(false);
-	};
 	return (
 		<Sidebar side="right" collapsible="none" className="w-72 flex-none p-4">
 			<SidebarContent>
@@ -153,7 +110,6 @@ export default function SettingsSidebar({
 								<NumericInput
 									id="rows-input"
 									outerState={rows}
-									// intercept row changes to confirm if images would be removed
 									setOuterState={(n: number) => requestChange("rows", n)}
 									resetFlag={rowsReset}
 									disabled={false}
@@ -219,7 +175,7 @@ export default function SettingsSidebar({
 								<Select
 									value={numberingStrategy}
 									onValueChange={(e) =>
-										onNumberingStrategyChange(e as NumberingStrategy)
+										setNumberingStrategy(e as NumberingStrategy)
 									}
 								>
 									<SelectTrigger id="label-type-select" className="w-36">
@@ -281,24 +237,12 @@ export default function SettingsSidebar({
 
 					{/* Export flow: open sheet to preview and download */}
 					<div className="flex gap-2">
-						<ExportDialog
-							rows={rows}
-							cols={cols}
-							previewCells={previewCells}
-							gap={gap}
-							fontSize={fontSize}
-							labelMode={labelMode}
-							hasAnyImage={hasAnyImage}
-						/>
+						<ExportDialog />
 					</div>
 				</section>
-				{/* Confirmation dialog when reducing grid would remove images */}
 				<Dialog
 					open={confirmOpen}
 					onOpenChange={(v) => {
-						// When dialog is closed (v === false) check if there's a pending
-						// change that wasn't applied; if so, treat it like a Cancel and
-						// reset the corresponding input display.
 						if (!v) {
 							if (pending) {
 								if (pending.type === "rows") setRowsReset((s) => s + 1);
@@ -309,7 +253,6 @@ export default function SettingsSidebar({
 						setConfirmOpen(v);
 					}}
 				>
-					{/* prevent closing by clicking backdrop so cancel logic (reset) runs only via Cancel) */}
 					<DialogContent
 						onPointerDownOutside={(e) => e.preventDefault()}
 						className="w-96"
@@ -328,9 +271,6 @@ export default function SettingsSidebar({
 							<Button
 								variant="outline"
 								onClick={() => {
-									// Explicitly reset the input display for the pending change,
-									// then close the dialog. We clear `pending` so onOpenChange
-									// won't double-reset.
 									if (pending) {
 										if (pending.type === "rows") setRowsReset((s) => s + 1);
 										else setColsReset((s) => s + 1);
@@ -344,12 +284,14 @@ export default function SettingsSidebar({
 
 							<Button
 								variant="secondary"
-								onClick={() => preserveByExpandingOther()}
+								onClick={() => applyPendingWithExpand(true)}
 							>
 								画像を保持
 							</Button>
 
-							<Button onClick={() => applyPending()}>削除</Button>
+							<Button onClick={() => applyPendingWithExpand(false)}>
+								削除
+							</Button>
 						</DialogFooter>
 					</DialogContent>
 				</Dialog>

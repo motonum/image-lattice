@@ -1,3 +1,4 @@
+import CanvasRenderer, { type CanvasHandle } from "@/components/CanvasRenderer";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -9,29 +10,25 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import type { CellItem } from "@/types/cell";
+import {
+	colsAtom,
+	fontSizeAtom,
+	gapAtom,
+	labelModeAtom,
+	previewCellsAtom,
+	rowsAtom,
+} from "@/state/gridAtoms";
+import { useAtomValue } from "jotai";
 import React, { useRef } from "react";
-import CanvasRenderer, { type CanvasHandle } from "./CanvasRenderer";
 
-interface Props {
-	rows: number;
-	cols: number;
-	previewCells: CellItem[];
-	gap: number;
-	fontSize: number;
-	labelMode: "below" | "above" | "overlay";
-	hasAnyImage: boolean;
-}
-
-export default function ExportDialog({
-	rows,
-	cols,
-	previewCells,
-	gap,
-	fontSize,
-	labelMode,
-	hasAnyImage,
-}: Props) {
+export default function ExportDialog() {
+	const rows = useAtomValue(rowsAtom);
+	const cols = useAtomValue(colsAtom);
+	const gap = useAtomValue(gapAtom);
+	const fontSize = useAtomValue(fontSizeAtom);
+	const labelMode = useAtomValue(labelModeAtom);
+	const previewCells = useAtomValue(previewCellsAtom);
+	const hasAnyImage = previewCells.some((c) => !!c.src);
 	const exportRef = useRef<CanvasHandle | null>(null);
 
 	const handleDownload = async () => {
