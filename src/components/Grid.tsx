@@ -24,11 +24,19 @@ import { useAtomValue, useSetAtom } from "jotai";
 import type { CSSProperties, ReactNode } from "react";
 
 function SortableItem({ id, children }: { id: string; children: ReactNode }) {
-	const { attributes, listeners, setNodeRef, transform, transition } =
-		useSortable({ id });
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id });
 	const style: CSSProperties = {
 		transform: CSS.Transform.toString(transform),
 		transition,
+		zIndex: isDragging ? 9999 : "auto",
+		boxShadow: isDragging ? "0 1px 2px rgba(0, 0, 0, 0.2)" : "none",
 	};
 	return (
 		<div
