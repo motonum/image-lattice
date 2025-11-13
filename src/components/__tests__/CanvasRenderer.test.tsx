@@ -1,20 +1,8 @@
-import {
-	colsAtom,
-	gridMatrixAtom,
-	labelModeAtom,
-	rowsAtom,
-} from "@/state/gridAtoms";
-import { buildMatrixFromLoaded } from "@/state/gridHelpers";
-import { act, render, waitFor } from "@testing-library/react";
+import CanvasRenderer from "@/components/CanvasRenderer";
+import { colsAtom, labelModeAtom, rowsAtom } from "@/state/gridAtoms";
+import { render } from "@testing-library/react";
 import { Provider, createStore } from "jotai";
 import React from "react";
-import { afterEach } from "vitest";
-import CanvasRenderer from "../CanvasRenderer";
-import { DUMMY_IMAGE_BASE64 } from "./__mock__/mockImage";
-
-afterEach(() => {
-	// 必要に応じてクリーンアップ処理を追加
-});
 
 describe("CanvasRenderer", () => {
 	test("クラッシュせずにレンダリングされる", () => {

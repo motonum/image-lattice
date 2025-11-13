@@ -1,14 +1,7 @@
-import {
-	cellsAtom,
-	colsAtom,
-	gridMatrixAtom,
-	replaceCellsAtom,
-	rowsAtom,
-} from "@/state/gridAtoms";
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import Grid from "@/components/Grid";
+import { cellsAtom, gridMatrixAtom, replaceCellsAtom } from "@/state/gridAtoms";
+import { fireEvent, render } from "@testing-library/react";
 import { Provider, createStore } from "jotai";
-import CanvasRenderer from "../CanvasRenderer";
-import Grid from "../Grid";
 
 // gridMatrixAtom をテスト用にオーバーライド
 describe("Grid", () => {
@@ -93,32 +86,4 @@ describe("Grid", () => {
 		expect(sortableItem).not.toBeNull();
 		expect(sortableItem).toBeInTheDocument();
 	});
-
-	// test("グリッドの行と列が動的に変更される", async () => {
-	// 	const store = createStore();
-	// 	const fixedIds = Array.from({ length: 9 }, (_, i) => `test-id-${i}`); // 固定された ID を使用
-	// 	store.set(replaceCellsAtom, fixedIds.map((id) => ({ id })));
-
-	// 	const { container } = render(
-	// 		<Provider store={store}>
-	// 			<Grid />
-	// 		</Provider>,
-	// 	);
-
-	// 	const grid = container.querySelector(".grid");
-	// 	expect(grid).not.toBeNull();
-	// 	expect(grid).toHaveStyle("grid-template-columns: repeat(3, 1fr)");
-
-	// 	const updatedIds = Array.from({ length: 16 }, (_, i) => `test-id-${i}`);
-	// 	store.set(replaceCellsAtom, updatedIds.map((id) => ({ id })));
-
-	// 	console.log("Updated state:", store.get(cellsAtom)); // 状態のデバッグログ
-	// 	console.log("Updated colsAtom:", store.get(colsAtom)); // 列数のデバッグログ
-
-	// 	await waitFor(() => {
-	// 		const updatedGrid = container.querySelector(".grid");
-	// 		console.log("Updated grid style:", updatedGrid?.getAttribute("style")); // DOM のデバッグログ
-	// 		expect(updatedGrid).toHaveStyle("grid-template-columns: repeat(4, 1fr)");
-	// 	});
-	// });
 });
