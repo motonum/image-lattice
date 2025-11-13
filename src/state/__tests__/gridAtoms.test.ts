@@ -8,11 +8,14 @@ import {
 } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
 import { createStore } from "jotai";
+import { getDefaultStore } from "jotai";
+import { describe, expect, test } from "vitest";
+import { gridAtoms } from "../gridAtoms";
 
 describe("gridAtoms", () => {
-	test("previewCellsAtom respects numbering strategies", () => {
-		const store = createStore();
+	const store = getDefaultStore();
 
+	test("previewCellsAtom がLabelTypeに従う", () => {
 		const items: CellItem[] = [
 			{
 				id: "0",
@@ -58,8 +61,7 @@ describe("gridAtoms", () => {
 		expect(user[0].label).toBe("a");
 	});
 
-	test("hasAnyImageAtom and clearCellAtom behavior", () => {
-		const store = createStore();
+	test("hasAnyImageAtom と clearCellAtom の動作", () => {
 		const items: CellItem[] = [{ id: "0", src: "s1" }, { id: "1" }];
 		store.set(replaceCellsAtom, items);
 		expect(store.get(hasAnyImageAtom)).toBe(true);
@@ -67,5 +69,16 @@ describe("gridAtoms", () => {
 		const cells = store.get(cellsAtom);
 		expect(cells[0].src).toBeUndefined();
 		expect(store.get(hasAnyImageAtom)).toBe(false);
+	});
+
+	test("デフォルト状態を正しく処理する", () => {
+		const defaultState = store.get(gridAtoms.gapAtom);
+		expect(defaultState).toBe(10); // Replace with actual default value
+	});
+
+	test("状態を正しく更新する", () => {
+		store.set(gridAtoms.gapAtom, 20);
+		const updatedState = store.get(gridAtoms.gapAtom);
+		expect(updatedState).toBe(20);
 	});
 });

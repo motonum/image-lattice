@@ -28,7 +28,7 @@ const initialMatrix: CellItem[][] = Array.from({ length: DEFAULT_ROWS }).map(
 	() => Array.from({ length: DEFAULT_COLS }).map(() => newPlaceholder()),
 );
 
-const gridMatrixAtom = atomWithImmer<CellItem[][]>(initialMatrix);
+export const gridMatrixAtom = atomWithImmer<CellItem[][]>(initialMatrix);
 
 export const cellAddressFamilyAtom = atomFamily((id: string) =>
 	atom((get) => {
@@ -85,7 +85,7 @@ export const rowsAtom = atom(
 );
 
 export const colsAtom = atom(
-	(get) => get(gridMatrixAtom)[0]?.length ?? 0,
+	(get) => get(gridMatrixAtom)[0]?.length ?? 1,
 	(get, set, payload: { newCols: number; expand: boolean }) => {
 		const { newCols, expand } = payload;
 		const rows = get(rowsAtom);
@@ -315,3 +315,12 @@ export const handleFilesDropAtom = atom(
 		}
 	},
 );
+
+export const gridAtoms = {
+	gapAtom,
+	fontSizeAtom,
+	labelModeAtom,
+	numberingStrategyAtom,
+	gridMatrixAtom,
+	cellAddressFamilyAtom,
+};
