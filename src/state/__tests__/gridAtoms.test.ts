@@ -8,12 +8,11 @@ import {
 } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
 import { createStore } from "jotai";
-import { getDefaultStore } from "jotai";
 import { describe, expect, test } from "vitest";
 import { gridAtoms } from "../gridAtoms";
 
 describe("gridAtoms", () => {
-	const store = getDefaultStore();
+	const store = createStore();
 
 	test("previewCellsAtom がLabelTypeに従う", () => {
 		const items: CellItem[] = [
