@@ -40,6 +40,7 @@ function SortableItem({ id, children }: { id: string; children: ReactNode }) {
 	};
 	return (
 		<div
+			data-id={id} // Add data-id attribute for testability
 			ref={setNodeRef}
 			style={style}
 			{...attributes}

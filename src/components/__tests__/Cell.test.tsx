@@ -1,3 +1,4 @@
+import Cell from "@/components/Cell";
 import * as fileLib from "@/lib/file";
 import {
 	type NumberingStrategy,
@@ -9,7 +10,6 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider, type WritableAtom, createStore, useSetAtom } from "jotai";
 import React from "react";
 import { vi } from "vitest";
-import Cell from "../Cell";
 
 vi.mock("@/lib/file", () => ({
 	loadImageFile: vi.fn(),

@@ -57,6 +57,7 @@ export default function Cell({ i, id }: RenderCellProps) {
 
 	return (
 		<div
+			data-id={id} // Add data-id attribute for testability
 			className="w-full h-full flex items-center justify-center"
 			onDragOver={(e) => e.preventDefault()}
 			onDrop={(e) => {

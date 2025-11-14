@@ -1,7 +1,7 @@
 import { indexToAlpha } from "@/lib/labels";
 
 describe("indexToAlpha", () => {
-	it("converts basic indices", () => {
+	it("基本的なインデックスを変換する", () => {
 		expect(indexToAlpha(0)).toBe("a");
 		expect(indexToAlpha(1)).toBe("b");
 		expect(indexToAlpha(25)).toBe("z");
@@ -11,7 +11,7 @@ describe("indexToAlpha", () => {
 		expect(indexToAlpha(52)).toBe("ba");
 	});
 
-	it("handles non-integers and negatives", () => {
+	it("非整数や負の値を処理する", () => {
 		expect(indexToAlpha(3.9)).toBe("d");
 		expect(indexToAlpha(-1)).toBe("");
 		expect(indexToAlpha(Number.NaN)).toBe("");

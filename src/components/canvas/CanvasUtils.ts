@@ -41,6 +41,10 @@ export const calculateDimensions = (
 	fontSize: number,
 	labelMode: string,
 ): { colWidths: number[]; rowHeights: number[] } => {
+	if (cols <= 0 || rows <= 0) {
+		throw new RangeError("Rows and columns must be positive integers.");
+	}
+
 	const colWidths: number[] = new Array(cols).fill(0);
 	const rowHeights: number[] = new Array(rows).fill(0);
 
