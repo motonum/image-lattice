@@ -1,3 +1,5 @@
+import * as UTIF from "utif";
+
 export function stripExt(name: string) {
 	return name.replace(/\.[^.]+$/, "");
 }
@@ -7,21 +9,12 @@ export async function loadTiffFileToDataURL(file: File): Promise<{
 	width: number;
 	height: number;
 }> {
-	const name = file.name;
 	const buffer = await file.arrayBuffer();
-	const UTIF = (await import("utif")) as unknown as {
-		decode: (
-			b: ArrayBuffer | Uint8Array,
-		) => Array<{ width?: number; height?: number }>;
-		decodeImages: (b: ArrayBuffer | Uint8Array, ifds: unknown[]) => void;
-		toRGBA8: (ifd: unknown) => Uint8Array;
-	};
-	const ifds = UTIF.decode(buffer);
-	UTIF.decodeImages(buffer, ifds);
-	const first = ifds[0] as { width?: number; height?: number } | undefined;
-	const width = first?.width ?? 0;
-	const height = first?.height ?? 0;
-	const rgba = UTIF.toRGBA8(first as unknown);
+	const ifd = UTIF.decode(buffer)[0];
+	UTIF.decodeImage(buffer, ifd);
+	const width = ifd?.width ?? 0;
+	const height = ifd?.height ?? 0;
+	const rgba = UTIF.toRGBA8(ifd);
 	const canvas = document.createElement("canvas");
 	canvas.width = width;
 	canvas.height = height;
