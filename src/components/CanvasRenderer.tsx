@@ -43,145 +43,112 @@ const CanvasRenderer = forwardRef<CanvasHandle | null, Props>(
 			exportPNG: async () => {
 				const canvasBefore = canvasRef.current;
 				if (!canvasBefore) return new Blob();
+				// EXPORT PNG の手順：
+				// 1) 描画を最新化するために renderAll() を呼ぶ
+				// 2) canvas.toBlob() で PNG Blob を生成して返す
 				await renderAll();
 				return await new Promise<Blob>((resolve) =>
-					canvasRef.current?.toBlob(
-						(b) => resolve(b || new Blob()),
-						"image/png",
-					),
+					canvasRef.current?.toBlob((b) => resolve(b || new Blob()), "image/png"),
 				);
 			},
 		}));
 
-		const drawLabelsAndImages = useCallback(
-			(
-				ctx: CanvasRenderingContext2D,
-				images: (HTMLImageElement | null)[],
-				rows: number,
-				cols: number,
-				colWidths: number[],
-				rowHeights: number[],
-				cells: CellItem[],
-				gap: number,
-				fontSize: number,
-				labelMode: string,
-			): void => {
-				let y = 0;
-				for (let r = 0; r < rows; r++) {
-					let x = 0;
-					for (let c = 0; c < cols; c++) {
-						const idx = r * cols + c;
-						const img = images[idx];
-						const w = colWidths[c];
-						const h =
-							rowHeights[r] -
-							(labelMode !== "overlay" ? Math.ceil(fontSize) + 6 : 0);
-
-						const cell = cells[idx];
-						if (img) {
-							try {
-								if (labelMode === "above" && cell?.label) {
-									ctx.fillStyle = "#000";
-									ctx.font = `${fontSize}px sans-serif`;
-									ctx.textBaseline = "top";
-									const labelX = x + 2;
-									const labelY = y + 2;
-									ctx.fillText(cell.label, labelX, labelY);
-									ctx.textBaseline = "alphabetic";
-									ctx.drawImage(
-										img,
-										x,
-										y + Math.ceil(fontSize) + 6,
-										img.naturalWidth || w,
-										img.naturalHeight || h,
-									);
-								} else if (labelMode === "below" && cell?.label) {
-									ctx.drawImage(
-										img,
-										x,
-										y,
-										img.naturalWidth || w,
-										img.naturalHeight || h,
-									);
-									ctx.fillStyle = "#000";
-									ctx.font = `${fontSize}px sans-serif`;
-									ctx.textBaseline = "top";
-									const labelY = y + h + 4;
-									ctx.fillText(cell.label, x + 2, labelY);
-									ctx.textBaseline = "alphabetic";
-								} else {
-									ctx.drawImage(
-										img,
-										x,
-										y,
-										img.naturalWidth || w,
-										img.naturalHeight || h,
-									);
-									if (labelMode === "overlay" && cell?.label) {
-										ctx.font = `${fontSize}px sans-serif`;
-										ctx.textBaseline = "top";
-										const metrics = ctx.measureText(cell.label || "");
-										const textW = Math.ceil(metrics.width);
-										const padding = 6;
-										const rectX = x + 4;
-										const rectY = y + 4;
-										const rectW = textW + padding * 2;
-										const rectH = fontSize + padding * 2;
-										ctx.fillStyle = "#fff";
-										ctx.fillRect(rectX, rectY, rectW, rectH);
-										ctx.fillStyle = "#000";
-										const textX = rectX + padding;
-										const textY = rectY + padding;
-										ctx.fillText(cell.label || "", textX, textY);
-										ctx.textBaseline = "alphabetic";
-									}
-								}
-							} catch (e) {
-								console.error("Error drawing label or image: ", e);
-							}
-						}
-						x += w + gap;
-					}
-					y += rowHeights[r] + gap;
+		// Helper: draw a single cell (image + label) at x,y with w,h
+		// - ctx.save()/restore() で描画ステートをローカルに保つ
+		// - labelMode によって描画順や領域の扱いが変わる（above/below/overlay）
+		const drawCell = (
+			ctx: CanvasRenderingContext2D,
+			img: HTMLImageElement | null,
+			cell: CellItem | undefined,
+			x: number,
+			y: number,
+			w: number,
+			h: number,
+			fontSize: number,
+			labelMode: string,
+		) => {
+			if (!img) return;
+			// STEP: セル描画開始（コンテキストの状態を保存）
+			ctx.save();
+			try {
+				// CASE: ラベルを画像の上に置く
+				// - ラベルを先に描画してから、下に画像を描く
+				if (labelMode === "above" && cell?.label) {
+					ctx.fillStyle = "#000";
+					ctx.font = `${fontSize}px sans-serif`;
+					ctx.textBaseline = "top";
+					ctx.fillText(cell.label, x + 2, y + 2);
+					ctx.textBaseline = "alphabetic";
+					// ラベル分だけ y を下げて画像を描画
+					ctx.drawImage(img, x, y + Math.ceil(fontSize) + 6, img.naturalWidth || w, img.naturalHeight || h);
+			} else if (labelMode === "below" && cell?.label) {
+				// CASE: ラベルを画像の下に置く
+				// - 画像を描画してから、その下にラベルを描く
+				ctx.drawImage(img, x, y, img.naturalWidth || w, img.naturalHeight || h);
+				ctx.fillStyle = "#000";
+				ctx.font = `${fontSize}px sans-serif`;
+				ctx.textBaseline = "top";
+				ctx.fillText(cell.label, x + 2, y + h + 4);
+				ctx.textBaseline = "alphabetic";
+			} else {
+				// CASE: overlay（画像の上に重ねる） または ラベル無し
+				// - 画像を描画
+				ctx.drawImage(img, x, y, img.naturalWidth || w, img.naturalHeight || h);
+				if (labelMode === "overlay" && cell?.label) {
+					// - 白背景の矩形を描いてから文字を描画（読みやすさのため）
+					ctx.font = `${fontSize}px sans-serif`;
+					ctx.textBaseline = "top";
+					const metrics = ctx.measureText(cell.label || "");
+					const textW = Math.ceil(metrics.width);
+					const padding = 6;
+					const rectX = x + 4;
+					const rectY = y + 4;
+					const rectW = textW + padding * 2;
+					const rectH = fontSize + padding * 2;
+					ctx.fillStyle = "#fff";
+					ctx.fillRect(rectX, rectY, rectW, rectH);
+					ctx.fillStyle = "#000";
+					ctx.fillText(cell.label || "", rectX + padding, rectY + padding);
+					ctx.textBaseline = "alphabetic";
 				}
-			},
-			[],
-		);
+			}
+			} catch (e) {
+				console.error("Error drawing cell:", e);
+			} finally {
+				ctx.restore();
+			}
+		};
 
 		const renderAll = useCallback(async () => {
+			// STEP 1: 画像を全セル分読み込む（非同期）
 			const images = await loadImages(cells, rows, cols);
-			const { colWidths, rowHeights } = calculateDimensions(
-				images,
-				rows,
-				cols,
-				cells,
-				gap,
-				fontSize,
-				labelMode,
-			);
-			const totalWidth =
-				colWidths.reduce((sum, w) => sum + w, 0) + gap * (cols - 1);
-			const totalHeight =
-				rowHeights.reduce((sum, h) => sum + h, 0) + gap * (rows - 1);
+			// STEP 2: 読み込んだ画像と設定値から各列幅・行高を算出
+			const { colWidths, rowHeights } = calculateDimensions(images, rows, cols, cells, gap, fontSize, labelMode);
+			// STEP 3: キャンバス全体の幅と高さを計算（セル幅合計 + ギャップ）
+			const totalWidth = colWidths.reduce((sum, w) => sum + w, 0) + gap * (cols - 1);
+			const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0) + gap * (rows - 1);
 
-			const ctx = canvasRef.current
-				? initializeCanvas(canvasRef.current, totalWidth, totalHeight)
-				: null;
-			if (ctx) {
-				drawLabelsAndImages(
-					ctx,
-					images,
-					rows,
-					cols,
-					colWidths,
-					rowHeights,
-					cells,
-					gap,
-					fontSize,
-					labelMode,
-				);
+			// STEP 4: canvas を初期化して 2D コンテキストを取得（内部で canvas.width/height を設定）
+			const ctx = canvasRef.current ? initializeCanvas(canvasRef.current, totalWidth, totalHeight) : null;
+			if (!ctx) return; // canvas が存在しない場合は描画中断
+
+			// STEP 5: 各行・各列を走査してセルごとに描画する
+			let y = 0;
+			for (let r = 0; r < rows; r++) {
+				let x = 0;
+				for (let c = 0; c < cols; c++) {
+					const idx = r * cols + c;
+					const img = images[idx];
+					const w = colWidths[c];
+					// STEP 5.1: overlay 以外はラベル分の高さを画像高さから差し引く
+					const h = rowHeights[r] - (labelMode !== "overlay" ? Math.ceil(fontSize) + 6 : 0);
+					// STEP 5.2: 実際のセル描画（drawCell が内部でラベルの描画位置を扱う）
+					drawCell(ctx, img, cells[idx], x, y, w, h, fontSize, labelMode);
+					x += w + gap; // 次の列の X 座標へ移動
+				}
+				y += rowHeights[r] + gap; // 次の行の Y 座標へ移動
 			}
-		}, [drawLabelsAndImages, cells, rows, cols, gap, fontSize, labelMode]);
+		}, [cells, rows, cols, gap, fontSize, labelMode]);
 
 		useEffect(() => {
 			renderAll();
