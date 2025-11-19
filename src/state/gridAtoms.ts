@@ -5,7 +5,7 @@ import { buildMatrixFromLoaded, newPlaceholder } from "@/state/gridHelpers";
 import type { CellItem } from "@/types/cell";
 import { atom } from "jotai";
 import { atomWithImmer } from "jotai-immer";
-import { atomFamily } from "jotai/utils";
+import { atomFamily, atomWithStorage } from "jotai/utils";
 import { toast } from "sonner";
 
 // Config
@@ -18,10 +18,10 @@ export type NumberingStrategy =
 	| "upper-alpha"
 	| "none";
 
-export const gapAtom = atom<number>(10);
-export const fontSizeAtom = atom<number>(72);
-export const labelModeAtom = atom<LabelMode>("overlay");
-export const numberingStrategyAtom = atom<NumberingStrategy>("user");
+export const gapAtom = atomWithStorage<number>("gap", 10);
+export const fontSizeAtom = atomWithStorage<number>("fontSize", 72);
+export const labelModeAtom = atomWithStorage<LabelMode>("labelMode", "overlay");
+export const numberingStrategyAtom = atomWithStorage<NumberingStrategy>("numberingStrategy", "user");
 
 // Base matrix atom: rows x cols of CellItem (writable)
 const initialMatrix: CellItem[][] = Array.from({ length: DEFAULT_ROWS }).map(
