@@ -7,7 +7,7 @@ export async function loadTiffFileToDataURL(file: File): Promise<{
 	width: number;
 	height: number;
 }> {
-	const name = file.name;
+	const _name = file.name;
 	const buffer = await file.arrayBuffer();
 	const UTIF = (await import("utif")) as unknown as {
 		decode: (
@@ -61,7 +61,7 @@ export async function loadImageFile(file: File): Promise<{
 					img.onload = () => res();
 					img.onerror = () => res();
 				});
-		} catch (e) {}
+		} catch (_e) {}
 	})();
 	return {
 		src: url,
@@ -76,5 +76,5 @@ export function revokeObjectUrlIfNeeded(src?: string) {
 		if (src?.startsWith("blob:")) {
 			URL.revokeObjectURL(src);
 		}
-	} catch (e) {}
+	} catch (_e) {}
 }

@@ -1,6 +1,6 @@
-import { Input } from "@/components/ui/input";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 type Props = {
 	id?: string;
@@ -139,7 +139,7 @@ const NumericInput: React.FC<Props> = ({
 					const sanitized = (
 						rejectNegative
 							? text.replace(/[^0-9]/g, "")
-							: text.replace(/[^0-9\-]/g, "")
+							: text.replace(/[^0-9-]/g, "")
 					).replace(/(?!^)-/g, "");
 					if (/^-?\d+$/.test(sanitized)) {
 						setRawValue(sanitized);

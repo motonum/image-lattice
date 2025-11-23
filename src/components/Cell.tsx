@@ -1,3 +1,5 @@
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import React, { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { revokeObjectUrlIfNeeded } from "@/lib/file";
@@ -9,8 +11,6 @@ import {
 	numberingStrategyAtom,
 	updateCellAtom,
 } from "@/state/gridAtoms";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import React, { useCallback } from "react";
 
 type RenderCellProps = {
 	i: number;
@@ -19,7 +19,7 @@ type RenderCellProps = {
 
 export default function Cell({ i, id }: RenderCellProps) {
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
-	const [cell, setCell] = useAtom(cellFamilyAtom(id));
+	const [cell, _setCell] = useAtom(cellFamilyAtom(id));
 	const numberingStrategy = useAtomValue(numberingStrategyAtom);
 	const updateCell = useSetAtom(updateCellAtom);
 	const clearCell = useSetAtom(clearCellAtom);

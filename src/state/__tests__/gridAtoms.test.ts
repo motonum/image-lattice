@@ -1,15 +1,15 @@
+import { createStore } from "jotai";
+import { describe, expect, test } from "vitest";
 import {
 	cellsAtom,
 	clearCellAtom,
+	gridAtoms,
 	hasAnyImageAtom,
 	numberingStrategyAtom,
 	previewCellsAtom,
 	replaceCellsAtom,
 } from "@/state/gridAtoms";
-import { gridAtoms } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
-import { createStore } from "jotai";
-import { describe, expect, test } from "vitest";
 
 describe("gridAtoms", () => {
 	const store = createStore();
