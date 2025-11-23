@@ -4,8 +4,8 @@
 
 /* Minimal custom styles retained (Tailwind utilities cover most UI). */
 body {
-	font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-		Arial;
+	font-family:
+		system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
 @theme inline {

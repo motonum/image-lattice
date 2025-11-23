@@ -1,8 +1,7 @@
+import { render } from "@testing-library/react";
+import { createStore, Provider } from "jotai";
 import CanvasRenderer from "@/components/CanvasRenderer";
 import { colsAtom, labelModeAtom, rowsAtom } from "@/state/gridAtoms";
-import { render } from "@testing-library/react";
-import { Provider, createStore } from "jotai";
-import React from "react";
 
 describe("CanvasRenderer", () => {
 	test("クラッシュせずにレンダリングされる", () => {

@@ -1,12 +1,12 @@
+import { atom } from "jotai";
+import { atomFamily, atomWithStorage } from "jotai/utils";
+import { atomWithImmer } from "jotai-immer";
+import { toast } from "sonner";
 import { loadImageFile, revokeObjectUrlIfNeeded, stripExt } from "@/lib/file";
 import { indexToAlpha } from "@/lib/labels";
 import { DEFAULT_COLS, DEFAULT_ROWS, MAX_ROWS } from "@/state/gridConstants";
 import { buildMatrixFromLoaded, newPlaceholder } from "@/state/gridHelpers";
 import type { CellItem } from "@/types/cell";
-import { atom } from "jotai";
-import { atomWithImmer } from "jotai-immer";
-import { atomFamily, atomWithStorage } from "jotai/utils";
-import { toast } from "sonner";
 
 // Config
 
@@ -21,7 +21,10 @@ export type NumberingStrategy =
 export const gapAtom = atomWithStorage<number>("gap", 10);
 export const fontSizeAtom = atomWithStorage<number>("fontSize", 72);
 export const labelModeAtom = atomWithStorage<LabelMode>("labelMode", "overlay");
-export const numberingStrategyAtom = atomWithStorage<NumberingStrategy>("numberingStrategy", "user");
+export const numberingStrategyAtom = atomWithStorage<NumberingStrategy>(
+	"numberingStrategy",
+	"user",
+);
 
 // Base matrix atom: rows x cols of CellItem (writable)
 const initialMatrix: CellItem[][] = Array.from({ length: DEFAULT_ROWS }).map(
@@ -188,7 +191,7 @@ export const insertFilesAtIndexAtom = atom(
 		if (fileArray.length === 0) return;
 
 		const cols = get(colsAtom);
-		const rows = get(rowsAtom);
+		const _rows = get(rowsAtom);
 
 		const cells = get(cellsAtom);
 		const emptyIndices = cells
