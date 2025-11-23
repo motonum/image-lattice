@@ -1,3 +1,5 @@
+import { useAtomValue } from "jotai";
+import { useRef } from "react";
 import CanvasRenderer from "@/components/CanvasRenderer";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,17 +12,8 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	colsAtom,
-	fontSizeAtom,
-	gapAtom,
-	labelModeAtom,
-	previewCellsAtom,
-	rowsAtom,
-} from "@/state/gridAtoms";
+import { previewCellsAtom } from "@/state/gridAtoms";
 import type { CanvasHandle } from "@/types/canvas";
-import { useAtomValue } from "jotai";
-import React, { useRef } from "react";
 
 export default function ExportDialog() {
 	const previewCells = useAtomValue(previewCellsAtom);

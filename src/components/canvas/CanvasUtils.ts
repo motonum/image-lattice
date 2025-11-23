@@ -21,7 +21,7 @@ export const loadImages = async (
 							img.onload = () => res();
 							img.onerror = () => res();
 						});
-				} catch (e) {}
+				} catch (_e) {}
 			})();
 			images[i] = img;
 			loadPromises.push(p);
@@ -37,7 +37,7 @@ export const calculateDimensions = (
 	rows: number,
 	cols: number,
 	cells: CellItem[],
-	gap: number,
+	_gap: number,
 	fontSize: number,
 	labelMode: string,
 ): { colWidths: number[]; rowHeights: number[] } => {

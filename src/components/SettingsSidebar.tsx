@@ -1,3 +1,5 @@
+import { useAtom, useAtomValue } from "jotai";
+import React from "react";
 import ExportDialog from "@/components/ExportDialog";
 import NumericInput from "@/components/NumericInput";
 import { Button } from "@/components/ui/button";
@@ -32,8 +34,6 @@ import {
 	previewCellsAtom,
 	rowsAtom,
 } from "@/state/gridAtoms";
-import { useAtom, useAtomValue } from "jotai";
-import React from "react";
 
 type LabelMode = "below" | "above" | "overlay";
 

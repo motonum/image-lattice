@@ -1,10 +1,10 @@
+import { useSetAtom } from "jotai";
+import type React from "react";
 import Grid from "@/components/Grid";
 import Header from "@/components/Header";
 import SettingsSidebar from "@/components/SettingsSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { handleFilesDropAtom } from "@/state/gridAtoms";
-import { useSetAtom } from "jotai";
-import type React from "react";
 
 export default function App() {
 	const handleFilesDrop = useSetAtom(handleFilesDropAtom);

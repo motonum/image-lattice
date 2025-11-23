@@ -1,15 +1,14 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { createStore, Provider, useSetAtom, type WritableAtom } from "jotai";
+import React from "react";
+import { vi } from "vitest";
 import Cell from "@/components/Cell";
-import * as fileLib from "@/lib/file";
 import {
 	type NumberingStrategy,
 	numberingStrategyAtom,
 	replaceCellsAtom,
 } from "@/state/gridAtoms";
 import type { CellItem } from "@/types/cell";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { Provider, type WritableAtom, createStore, useSetAtom } from "jotai";
-import React from "react";
-import { vi } from "vitest";
 
 vi.mock("@/lib/file", () => ({
 	loadImageFile: vi.fn(),

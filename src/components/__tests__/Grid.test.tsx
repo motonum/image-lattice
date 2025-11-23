@@ -1,7 +1,7 @@
+import { fireEvent, render } from "@testing-library/react";
+import { createStore, Provider } from "jotai";
 import Grid from "@/components/Grid";
 import { cellsAtom, gridMatrixAtom, replaceCellsAtom } from "@/state/gridAtoms";
-import { fireEvent, render } from "@testing-library/react";
-import { Provider, createStore } from "jotai";
 
 // gridMatrixAtom をテスト用にオーバーライド
 describe("Grid", () => {

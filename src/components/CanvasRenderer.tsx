@@ -1,3 +1,11 @@
+import { useAtomValue } from "jotai";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useRef,
+} from "react";
 import {
 	colsAtom,
 	fontSizeAtom,
@@ -8,14 +16,6 @@ import {
 } from "@/state/gridAtoms";
 import type { CanvasHandle } from "@/types/canvas";
 import type { CellItem } from "@/types/cell";
-import { useAtomValue } from "jotai";
-import React, {
-	forwardRef,
-	useImperativeHandle,
-	useRef,
-	useEffect,
-	useCallback,
-} from "react";
 import {
 	calculateDimensions,
 	initializeCanvas,
