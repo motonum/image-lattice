@@ -1,3 +1,20 @@
+import type { DragEndEvent } from "@dnd-kit/core";
+import {
+	closestCenter,
+	DndContext,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	rectSortingStrategy,
+	SortableContext,
+	useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useAtomValue, useSetAtom } from "jotai";
+import type { CSSProperties, ReactNode } from "react";
 import Cell from "@/components/Cell";
 import {
 	cellsAtom,
@@ -5,23 +22,6 @@ import {
 	replaceCellsAtom,
 	rowsAtom,
 } from "@/state/gridAtoms";
-import {
-	DndContext,
-	PointerSensor,
-	closestCenter,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
-import {
-	SortableContext,
-	arrayMove,
-	rectSortingStrategy,
-	useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { useAtomValue, useSetAtom } from "jotai";
-import type { CSSProperties, ReactNode } from "react";
 
 function SortableItem({ id, children }: { id: string; children: ReactNode }) {
 	const {
